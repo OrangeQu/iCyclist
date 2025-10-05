@@ -6,11 +6,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
 
 class SportRecordAdapter(
-    private val records: List<SportRecord>
+    private var records: List<SportRecord>,
+    private val onDelete: (SportRecord) -> Unit,
+    private val onShare: (SportRecord) -> Unit
 ) : RecyclerView.Adapter<SportRecordAdapter.RecordViewHolder>() {
 
     class RecordViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -29,6 +32,20 @@ class SportRecordAdapter(
 
     override fun onBindViewHolder(holder: RecordViewHolder, position: Int) {
         val record = records[position]
+
+        holder.itemView.setOnLongClickListener {
+            AlertDialog.Builder(holder.itemView.context)
+                .setTitle("记录操作")
+                .setItems(arrayOf("分享至社区", "删除记录")) { dialog, which ->
+                    when (which) {
+                        0 -> onShare(record)
+                        1 -> onDelete(record)
+                    }
+                }
+                .setNegativeButton("取消", null)
+                .show()
+            true
+        }
         
         // 加载轨迹缩略图
         if (!record.trackThumbPath.isNullOrEmpty()) {
@@ -52,5 +69,10 @@ class SportRecordAdapter(
     }
 
     override fun getItemCount(): Int = records.size
+
+    fun updateRecords(newRecords: List<SportRecord>) {
+        records = newRecords
+        notifyDataSetChanged()
+    }
 }
 

@@ -23,15 +23,53 @@
         <!-- 高德定位服务 -->
         <service android:name="com.amap.api.location.APSService" />
         
+        <!-- 主容器Activity (Fragment导航容器) -->
         <activity
-            android:name=".MainActivity"
-            android:exported="true">
+            android:name=".MainContainerActivity"
+            android:exported="true"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+        
+        <activity
+            android:name=".EditProfileActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+        
+        <!-- 运动记录Activity -->
+        <activity
+            android:name=".SportTrackingActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:label="运动中" />
+
+        <activity
+            android:name=".CommunityActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
     </application>
 
     <!-- 地图SDK（包含其搜索功能）需要的基础权限 -->

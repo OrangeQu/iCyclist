@@ -4,10 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:colorBackground"
-    tools:context=".MainActivity">
+    android:background="?android:colorBackground">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?attr/colorPrimary"
@@ -118,17 +118,6 @@
             android:paddingEnd="8dp"
             tools:listitem="@layout/sport_record_item" />
 
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/mainBottomNavigation"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/colorSurface"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            app:itemIconTint="@color/navigation_item_selector"
-            app:itemTextColor="@color/navigation_item_selector"
-            app:labelVisibilityMode="labeled"
-            app:menu="@menu/menu_main_navigation" />
     </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
