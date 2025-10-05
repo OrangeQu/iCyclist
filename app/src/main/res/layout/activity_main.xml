@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <!-- 上半屏：地图（可通过代码动态隐藏/显示） -->
+    <com.amap.api.maps.MapView
+        android:id="@+id/map"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- 下半屏：操作区和运动记录 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:background="#CCFFFFFF"
+        android:padding="16dp">
+
+        <!-- 位置信息 -->
+        <TextView
+            android:id="@+id/tvLocation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/getting_location"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/getting_address"
+            android:textSize="14sp"
+            android:layout_marginTop="4dp" />
+
+        <!-- 操作按钮区 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="24dp">
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:src="@android:drawable/ic_menu_mylocation"
+                android:contentDescription="@string/relocate" />
+
+            <Button
+                android:id="@+id/btnStartSport"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="开始运动"
+                android:drawableStart="@android:drawable/ic_media_play"
+                android:layout_marginEnd="16dp" />
+
+            <Button
+                android:id="@+id/btnStopSport"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="结束运动"
+                android:drawableStart="@android:drawable/ic_delete"
+                android:backgroundTint="#F44336"
+                android:visibility="gone" />
+
+            <!-- 可扩展更多按钮 -->
+        </LinearLayout>
+
+        <!-- 运动记录列表 -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvSportRecords"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="16dp"
+            android:background="#F5F5F5"/>
+
+    </LinearLayout>
+
+</LinearLayout>

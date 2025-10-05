@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:background="#FFFFFF"
+    android:gravity="center_vertical">
+
+    <!-- 轨迹缩略图 -->
+    <ImageView
+    android:id="@+id/imgTrackThumb"
+    android:layout_width="64dp"
+    android:layout_height="64dp"
+    android:src="@mipmap/ic_launcher"
+    android:scaleType="centerCrop"
+    android:background="#E0E0E0"
+    android:layout_marginEnd="16dp" />
+
+    <!-- 运动信息 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvRecordTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2025-09-30 10:00"
+            android:textSize="14sp"
+            android:textColor="#888888" />
+
+        <TextView
+            android:id="@+id/tvRecordDuration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="用时：00:45:12"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="2dp" />
+
+        <TextView
+            android:id="@+id/tvRecordDistance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="距离：12.34 km"
+            android:textSize="16sp"
+            android:layout_marginTop="2dp" />
+
+        <TextView
+            android:id="@+id/tvRecordSpeed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="均速：16.5 km/h"
+            android:textSize="14sp"
+            android:textColor="#888888"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+</LinearLayout>
