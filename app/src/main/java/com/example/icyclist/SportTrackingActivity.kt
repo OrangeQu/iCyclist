@@ -7,11 +7,13 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.View
-import android.widget.Button
+import com.google.android.material.button.MaterialButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
 import com.amap.api.location.AMapLocation
 import com.amap.api.location.AMapLocationClient
@@ -50,10 +52,10 @@ class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, Locatio
     private lateinit var tvDistance: TextView
     private lateinit var tvSpeed: TextView
     private lateinit var tvAvgSpeed: TextView
-    private lateinit var btnPause: Button
-    private lateinit var btnStop: Button
-    private lateinit var fabBack: FloatingActionButton
-    
+    private lateinit var btnPause: MaterialButton
+    private lateinit var btnStop: FloatingActionButton
+    private lateinit var toolbar: Toolbar
+
     // 运动数据
     private var sportStartTime: Long = 0
     private var pausedTime: Long = 0
@@ -64,6 +66,7 @@ class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, Locatio
     private var totalDistance = 0.0 // 米
     private var maxSpeed = 0.0 // km/h
     private val speedList = mutableListOf<Double>()
+    private var lastRecordedLocation: LatLng? = null // 最后记录的位置
     
     // 定时器
     private val handler = Handler(Looper.getMainLooper())
@@ -105,17 +108,41 @@ class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, Locatio
         
         // 开始运动
         startSportRecording()
+        
+        // 处理返回按钮
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                showExitConfirmDialog()
+            }
+        })
     }
     
     private fun initViews() {
+        toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        toolbar.setNavigationOnClickListener {
+            showExitConfirmDialog()
+        }
+
         tvTimer = findViewById(R.id.tvTimer)
-        tvDistance = findViewById(R.id.tvDistance)
-        tvSpeed = findViewById(R.id.tvSpeed)
-        tvAvgSpeed = findViewById(R.id.tvAvgSpeed)
+
+        val layoutDistance = findViewById<View>(R.id.layoutDistance)
+        tvDistance = layoutDistance.findViewById(R.id.tvValue)
+        layoutDistance.findViewById<TextView>(R.id.tvLabel).text = "距离(km)"
+
+        val layoutSpeed = findViewById<View>(R.id.layoutSpeed)
+        tvSpeed = layoutSpeed.findViewById(R.id.tvValue)
+        layoutSpeed.findViewById<TextView>(R.id.tvLabel).text = "速度(km/h)"
+
+        val layoutAvgSpeed = findViewById<View>(R.id.layoutAvgSpeed)
+        tvAvgSpeed = layoutAvgSpeed.findViewById(R.id.tvValue)
+        layoutAvgSpeed.findViewById<TextView>(R.id.tvLabel).text = "均速(km/h)"
+
+
         btnPause = findViewById(R.id.btnPause)
         btnStop = findViewById(R.id.btnStop)
-        fabBack = findViewById(R.id.fabBack)
-        
+
         // 暂停/继续按钮
         btnPause.setOnClickListener {
             togglePause()
@@ -126,10 +153,8 @@ class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, Locatio
             showStopConfirmDialog()
             true
         }
-        
-        // 返回按钮
-        fabBack.setOnClickListener {
-            showExitConfirmDialog()
+        btnStop.setOnClickListener {
+            Toast.makeText(this, "请长按结束运动", Toast.LENGTH_SHORT).show()
         }
     }
     
@@ -235,6 +260,12 @@ class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, Locatio
         // 启动计时器
         startTimer()
         
+        // 缩放地图到合理级别(18级,适合骑行)
+        lastRecordedLocation?.let { location ->
+            aMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(location, 18f))
+            Log.d("SportTrackingActivity", "地图已缩放至18级")
+        }
+        
         Toast.makeText(this, "开始运动记录", Toast.LENGTH_SHORT).show()
         Log.d("SportTrackingActivity", "运动记录开始")
     }
@@ -245,7 +276,7 @@ class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, Locatio
             totalPausedDuration += System.currentTimeMillis() - pausedTime
             isPaused = false
             btnPause.text = "暂停"
-            btnPause.setBackgroundColor(Color.parseColor("#FF9800"))
+            btnPause.setIconResource(R.drawable.ic_baseline_pause_24)
             startTimer()
             Toast.makeText(this, "继续运动", Toast.LENGTH_SHORT).show()
         } else {
@@ -253,7 +284,7 @@ class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, Locatio
             pausedTime = System.currentTimeMillis()
             isPaused = true
             btnPause.text = "继续"
-            btnPause.setBackgroundColor(Color.parseColor("#4CAF50"))
+            btnPause.setIconResource(R.drawable.ic_baseline_play_arrow_24)
             stopTimer()
             Toast.makeText(this, "已暂停", Toast.LENGTH_SHORT).show()
         }
@@ -300,6 +331,9 @@ class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, Locatio
         
         val currentPoint = LatLng(location.latitude, location.longitude)
         currentRoutePoints.add(currentPoint)
+        
+        // 保存最后记录的位置
+        lastRecordedLocation = currentPoint
         
         // 计算距离
         if (currentRoutePoints.size > 1) {
@@ -510,9 +544,5 @@ class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, Locatio
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         mapView?.onSaveInstanceState(outState)
-    }
-    
-    override fun onBackPressed() {
-        showExitConfirmDialog()
     }
 }

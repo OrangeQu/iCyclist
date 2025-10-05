@@ -1,0 +1,93 @@
+package com.example.icyclist
+
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.fragment.app.Fragment
+import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.button.MaterialButton
+import java.io.File
+
+class ProfileFragment : Fragment() {
+
+    private var imgAvatar: ImageView? = null
+    private var tvUserName: TextView? = null
+    private var tvUserEmail: TextView? = null
+    
+    private val editProfileLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            // 重新加载用户数据
+            loadUserData()
+        }
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        return inflater.inflate(R.layout.fragment_profile, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val toolbar = view.findViewById<MaterialToolbar>(R.id.profileToolbar)
+        imgAvatar = view.findViewById(R.id.imgAvatar)
+        tvUserName = view.findViewById(R.id.tvUserName)
+        tvUserEmail = view.findViewById(R.id.tvUserEmail)
+        val editButton = view.findViewById<MaterialButton>(R.id.btnEditProfile)
+        val logoutButton = view.findViewById<MaterialButton>(R.id.btnLogout)
+
+        loadUserData()
+
+        editButton.setOnClickListener {
+            val intent = Intent(requireContext(), EditProfileActivity::class.java)
+            editProfileLauncher.launch(intent)
+        }
+
+        logoutButton.setOnClickListener {
+            // 执行登出操作
+            UserManager.logout(requireContext())
+            
+            // 跳转回登录页面
+            val intent = Intent(requireActivity(), LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            requireActivity().finish()
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        loadUserData()
+    }
+    
+    private fun loadUserData() {
+        // 显示当前登录用户的邮箱和昵称
+        val currentEmail = UserManager.getCurrentUserEmail(requireContext())
+        val currentNickname = UserManager.getCurrentUserNickname(requireContext())
+        val avatarPath = UserManager.getCurrentUserAvatar(requireContext())
+        
+        tvUserEmail?.text = currentEmail ?: ""
+        tvUserName?.text = currentNickname ?: "骑行者"
+        
+        // 加载头像
+        if (!avatarPath.isNullOrEmpty()) {
+            val file = File(avatarPath)
+            if (file.exists()) {
+                imgAvatar?.setImageURI(Uri.fromFile(file))
+            }
+        }
+    }
+}

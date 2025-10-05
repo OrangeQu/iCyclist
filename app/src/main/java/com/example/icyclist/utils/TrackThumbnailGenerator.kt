@@ -58,16 +58,16 @@ object TrackThumbnailGenerator {
             val drawHeight = height - 2 * padding
             
             // 计算缩放比例（保持纵横比）
-            val scale = if (latRange / lngRange > drawHeight / drawWidth) {
-                drawHeight / latRange
+            val scale: Float = if (latRange / lngRange > drawHeight / drawWidth) {
+                (drawHeight / latRange).toFloat()
             } else {
-                drawWidth / lngRange
+                (drawWidth / lngRange).toFloat()
             }
             
             // 将经纬度转换为画布坐标
             fun latLngToCanvas(point: LatLng): Pair<Float, Float> {
-                val x = padding + (point.longitude - minLng) * scale.toFloat()
-                val y = height - padding - (point.latitude - minLat) * scale.toFloat()
+                val x = padding + (point.longitude - minLng).toFloat() * scale
+                val y = height.toFloat() - padding - (point.latitude - minLat).toFloat() * scale
                 return Pair(x, y)
             }
             
