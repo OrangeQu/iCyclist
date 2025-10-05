@@ -6,16 +6,16 @@ iCyclist 是一款专为骑行爱好者设计的 Android 应用，提供实时�
 
 ## 🖼️ 应用界面预览
 
-| 登录 | 注册 | 主界面 |
-|:---:|:---:|:---:|
+|              登录               |                注册                |             主界面             |
+| :-----------------------------: | :--------------------------------: | :----------------------------: |
 | ![](docs/screenshots/login.jpg) | ![](docs/screenshots/register.jpg) | ![](docs/screenshots/main.jpg) |
 
-| 运动界面 | 运动结束 | 运动记录操作 |
-|:---:|:---:|:---:|
+|            运动界面             |              运动结束               |             运动记录操作             |
+| :-----------------------------: | :---------------------------------: | :----------------------------------: |
 | ![](docs/screenshots/sport.jpg) | ![](docs/screenshots/sport_end.jpg) | ![](docs/screenshots/record_ops.jpg) |
 
-| 社区 | 我的 | 编辑资料 |
-|:---:|:---:|:---:|
+|                社区                 |               我的                |                编辑资料                |
+| :---------------------------------: | :-------------------------------: | :------------------------------------: |
 | ![](docs/screenshots/community.jpg) | ![](docs/screenshots/profile.jpg) | ![](docs/screenshots/edit_profile.jpg) |
 
 ---
@@ -91,54 +91,45 @@ iCyclist 是一款专为骑行爱好者设计的 Android 应用，提供实时�
 
 ---
 
-## 🏗️ 项目架构
+## 🏗️ 项目架构（详细说明）
 
-```
-app/
-├── src/
-│   ├── main/
-│   │   ├── java/com/example/icyclist/
-│   │   │   ├── MainContainerActivity.kt      # 主Activity, Fragment容器
-│   │   │   ├── SportTrackingActivity.kt      # 运动追踪独立Activity
-│   │   │   ├── fragment/
-│   │   │   │   ├── SportFragment.kt          # 运动主页
-│   │   │   │   ├── CommunityFragment.kt      # 社区主页
-│   │   │   │   ├── ProfileFragment.kt        # 我的主页
-│   │   │   ├── adapter/
-│   │   │   │   ├── CommunityPostAdapter.kt    # 社区分享列表适配器
-│   │   │   │   ├── SportRecordAdapter.kt     # 运动记录列表适配器
-│   │   │   ├── manager/
-│   │   │   │   ├── UserManager.kt            # 用户资料与登录管理
-│   │   │   ├── database/
-│   │   │   │   ├── SportDatabase.kt          # Room数据库
-│   │   │   │   ├── SportRecordEntity.kt      # 运动记录实体
-│   │   │   │   ├── CommunityPostEntity.kt    # 社区分享实体
-│   │   │   │   ├── CommunityPostDao.kt       # 社区分享DAO
-│   │   │   ├── EditProfileActivity.kt        # 编辑资料页面
-│   │   │   ├── RegisterActivity.kt           # 注册页面
-│   │   │   ├── LoginActivity.kt              # 登录页面
-│   │   │   └── ...
-│   ├── res/
-│   │   ├── layout/
-│   │   │   ├── activity_edit_profile.xml
-│   │   │   ├── community_post_item.xml
-│   │   │   ├── fragment_sport.xml
-│   │   │   ├── fragment_community.xml
-│   │   │   ├── fragment_profile.xml
-│   │   ├── anim/
-│   │   │   ├── fade_in.xml
-│   │   │   ├── fade_out.xml
-│   │   └── ...
-├── docs/
-│   └── screenshots/                          # 项目截图
-├── build.gradle.kts
-├── README.md
-└── ...
-```
+项目采用“单 Activity + 多 Fragment”为主架构，界面划分为 Sport / Community / Profile 三大模块，底部导航负责切换。代码按职责划分包结构，便于维护与扩展：
 
-- **主架构**: 单Activity+多Fragment，底部导航统一管理
-- **分层设计**: 数据库、适配器、管理器、UI分包，结构清晰易维护
-- **资源组织**: 布局、动画、图片等资源分目录存放
+- 顶层目录（app/src/main/java/com/example/icyclist）
+  - `activity/` 或 `ui/activity/`（视工程组织）
+    - `MainContainerActivity.kt` — 应用主容器，负责 Fragment 切换、底部导航与全局路由
+    - `SportTrackingActivity.kt` — 全屏运动追踪（实时地图、传感器、记录生成）
+  - `fragment/` 或 `ui/fragment/`
+    - `SportFragment.kt` — 运动主页面（历史记录列表、开始/分享入口）
+    - `CommunityFragment.kt` — 社区页面（帖子列表、加载与展示）
+    - `ProfileFragment.kt` — 我的页面（资料展示、编辑入口）
+  - `adapter/`
+    - `SportRecordAdapter.kt` — 运动记录列表适配器（长按分享、删除操作）
+    - `CommunityPostAdapter.kt` — 社区帖子卡片渲染（头像、昵称、缩略图）
+  - `database/`
+    - `SportDatabase.kt` — Room 数据库入口与迁移定义（MIGRATION_1_2）
+    - `SportRecordEntity.kt`、`CommunityPostEntity.kt` — 实体定义
+    - `SportRecordDao.kt`、`CommunityPostDao.kt` — DAO 操作接口
+    - `converters/` — TypeConverter（List<LatLng> ↔ JSON）
+  - `manager/` 或 `util/`
+    - `UserManager.kt` — 用户状态、注册/登录、加密偏好存取（EncryptedSharedPreferences）
+    - `TrackThumbnailGenerator.kt` — 生成轨迹缩略图（Canvas 绘制）
+  - `ui/`（资源）
+    - `layout/`、`anim/`、`drawable/` 等资源目录按功能组织
+
+数据流（简要）
+
+- 运动记录创建：
+  SportTrackingActivity -> 生成 SportRecordEntity -> Room.insert -> 触发缩略图保存到 filesDir -> 返回 SportFragment 更新列表
+- 分享到社区：
+  SportFragment 长按记录 -> 构建 CommunityPostEntity（包含 trackThumb 路径、用户昵称/头像）-> Room.insert -> 切换 CommunityFragment 加载并显示
+
+关键设计决策
+
+- 单 Activity + Fragment：保持底部导航与状态一致，减少 Activity 切换开销
+- Room 自动迁移：通过 MIGRATION 保证数据库升级过程无数据丢失
+- 用户信息存储：使用 EncryptedSharedPreferences 存放敏感信息（邮箱、昵称、头像路径等）
+- 图片与文件：头像、缩略图存放于 `filesDir`（子目录 avatars/ / thumbnails/）
 
 ---
 
