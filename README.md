@@ -6,17 +6,17 @@ iCyclist 是一款专为骑行爱好者设计的 Android 应用，提供实时�
 
 ## 🖼️ 应用界面预览
 
-|              登录               |                注册                |             主界面             |            运动界面             |
-| :-----------------------------: | :--------------------------------: | :----------------------------: | :-----------------------------: |
-| ![](docs/screenshots/login.jpg) | ![](docs/screenshots/register.jpg) | ![](docs/screenshots/main.jpg) | ![](docs/screenshots/sport.jpg) |
+| 登录 | 注册 | 主界面 |
+|:---:|:---:|:---:|
+| ![](docs/screenshots/login.jpg) | ![](docs/screenshots/register.jpg) | ![](docs/screenshots/main.jpg) |
 
-|              运动结束               |             运动记录操作             |                社区                 |               我的                |
-| :---------------------------------: | :----------------------------------: | :---------------------------------: | :-------------------------------: |
-| ![](docs/screenshots/sport_end.jpg) | ![](docs/screenshots/record_ops.jpg) | ![](docs/screenshots/community.jpg) | ![](docs/screenshots/profile.jpg) |
+| 运动界面 | 运动结束 | 运动记录操作 |
+|:---:|:---:|:---:|
+| ![](docs/screenshots/sport.jpg) | ![](docs/screenshots/sport_end.jpg) | ![](docs/screenshots/record_ops.jpg) |
 
-|                编辑资料                |
-| :------------------------------------: |
-| ![](docs/screenshots/edit_profile.jpg) |
+| 社区 | 我的 | 编辑资料 |
+|:---:|:---:|:---:|
+| ![](docs/screenshots/community.jpg) | ![](docs/screenshots/profile.jpg) | ![](docs/screenshots/edit_profile.jpg) |
 
 ---
 
