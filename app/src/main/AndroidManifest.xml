@@ -70,6 +70,14 @@
             android:name=".ProfileActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
+            
+        <activity
+            android:name=".community.CreatePostActivity"
+            android:exported="false"
+            android:label="创建帖子"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar" />
+            
     </application>
 
     <!-- 地图SDK（包含其搜索功能）需要的基础权限 -->

@@ -5,6 +5,10 @@ import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import com.example.icyclist.fragment.CommunityFragment
+import com.example.icyclist.fragment.ProfileFragment
+import com.example.icyclist.fragment.SportFragment
+import com.example.icyclist.manager.UserManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainContainerActivity : AppCompatActivity() {

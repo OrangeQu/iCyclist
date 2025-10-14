@@ -1,4 +1,4 @@
-package com.example.icyclist
+package com.example.icyclist.fragment
 
 import android.app.Activity
 import android.content.Intent
@@ -12,6 +12,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import com.example.icyclist.EditProfileActivity
+import com.example.icyclist.LoginActivity
+import com.example.icyclist.R
+import com.example.icyclist.manager.UserManager
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import java.io.File

@@ -1,4 +1,4 @@
-package com.example.icyclist
+package com.example.icyclist.utils
 
 import com.amap.api.maps.model.LatLng
 

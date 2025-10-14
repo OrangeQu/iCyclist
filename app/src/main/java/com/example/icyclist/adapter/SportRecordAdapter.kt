@@ -1,4 +1,4 @@
-package com.example.icyclist
+package com.example.icyclist.adapter
 
 import android.graphics.BitmapFactory
 import android.view.LayoutInflater
@@ -8,6 +8,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
+import com.example.icyclist.R
+import com.example.icyclist.utils.SportRecord
 import java.io.File
 
 class SportRecordAdapter(

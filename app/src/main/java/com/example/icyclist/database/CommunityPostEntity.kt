@@ -6,17 +6,18 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "community_posts")
 data class CommunityPostEntity(
     @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
-    
-    val userEmail: String,
+    val id: Int = 0,
+    val userAvatar: String, // 这里可以存一个 drawable 名字或者未来的 URL
     val userNickname: String,
-    val userAvatarPath: String?,
-    
     val content: String,
-    val thumbnailPath: String?,
-    
+    val imageUrl: String?, // 帖子图片路径，可以为空
     val timestamp: Long = System.currentTimeMillis(),
+    val likes: Int = 0,
+    val comments: Int = 0,
     
-    // 可选:关联的运动记录ID
-    val sportRecordId: Long? = null
+    // 关联的运动记录信息 (可选)
+    val sportRecordId: Long? = null,
+    val sportDistance: String? = null,
+    val sportDuration: String? = null,
+    val sportThumbPath: String? = null
 )

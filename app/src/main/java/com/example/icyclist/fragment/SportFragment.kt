@@ -1,4 +1,4 @@
-package com.example.icyclist
+package com.example.icyclist.fragment
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -28,7 +28,13 @@ import com.amap.api.maps.LocationSource
 import com.amap.api.maps.MapView
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.MyLocationStyle
+import com.example.icyclist.MainContainerActivity
+import com.example.icyclist.R
+import com.example.icyclist.SportTrackingActivity
+import com.example.icyclist.adapter.SportRecordAdapter
 import com.example.icyclist.database.SportDatabase
+import com.example.icyclist.manager.UserManager
+import com.example.icyclist.utils.SportRecord
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
@@ -483,17 +489,19 @@ class SportFragment : Fragment(), AMapLocationListener, LocationSource {
                 // 保存到数据库
                 val insertedId = withContext(Dispatchers.IO) {
                     val post = com.example.icyclist.database.CommunityPostEntity(
-                        userEmail = userEmail,
                         userNickname = userNickname,
-                        userAvatarPath = userAvatarPath,
+                        userAvatar = userAvatarPath ?: "ic_twotone_person_24", // 使用用户头像，如果没有则用默认
                         content = content,
-                        thumbnailPath = record.trackThumbPath,
-                        sportRecordId = record.id
+                        imageUrl = record.trackThumbPath, // 运动轨迹图作为帖子图片
+                        sportRecordId = record.id,
+                        sportDistance = record.distance,
+                        sportDuration = record.duration,
+                        sportThumbPath = record.trackThumbPath
                     )
                     sportDatabase.communityPostDao().insertPost(post)
                 }
                 
-                Log.d("SportFragment", "✅ 分享成功! 插入ID=$insertedId")
+                Log.d("SportFragment", "✅ 分享成功! Post saved to local DB.")
                 
                 Toast.makeText(requireContext(), "已分享到社区", Toast.LENGTH_SHORT).show()
                 

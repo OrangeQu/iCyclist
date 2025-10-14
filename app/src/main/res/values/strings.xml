@@ -13,4 +13,19 @@
     <string name="longitude">经度</string>
     <string name="latitude">纬度</string>
     <string name="resolving_address">正在解析地址...</string>
+
+    <!-- iCyclist-Android2 (社区) strings -->
+    <string name="home">首页</string>
+    <string name="explore">发现</string>
+    <string name="publish">发布</string>
+    <string name="notifications">通知</string>
+    <string name="profile">我的</string>
+    <string name="create_post">发布帖子</string>
+    <string name="publish_button">发布</string>
+    <string name="add_image">添加图片</string>
+    <string name="content_hint">分享你的骑行故事、路线推荐或装备心得...</string>
+    <string name="exit_confirmation_title">放弃发布</string>
+    <string name="exit_confirmation_message">您有未发布的内容，确定要放弃吗？</string>
+    <string name="discard">放弃</string>
+    <string name="continue_edit">继续编辑</string>
 </resources>

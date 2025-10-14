@@ -1,4 +1,4 @@
-package com.example.icyclist
+package com.example.icyclist.manager
 
 import android.content.Context
 import android.content.SharedPreferences
