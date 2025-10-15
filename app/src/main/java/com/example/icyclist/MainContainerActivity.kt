@@ -6,6 +6,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.example.icyclist.fragment.CommunityFragment
+import com.example.icyclist.fragment.MomentFragment
 import com.example.icyclist.fragment.ProfileFragment
 import com.example.icyclist.fragment.SportFragment
 import com.example.icyclist.manager.UserManager
@@ -38,6 +39,10 @@ class MainContainerActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.menu_sport -> {
                     loadFragment(SportFragment())
+                    true
+                }
+                R.id.menu_moment -> {
+                    loadFragment(MomentFragment())
                     true
                 }
                 R.id.menu_community -> {

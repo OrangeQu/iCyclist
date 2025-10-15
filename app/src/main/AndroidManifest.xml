@@ -62,6 +62,18 @@
             android:label="运动中" />
 
         <activity
+            android:name=".SportHistoryActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:label="运动历史" />
+
+        <activity
+            android:name=".TrackDetailActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:label="轨迹详情" />
+
+        <activity
             android:name=".CommunityActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
@@ -77,6 +89,16 @@
             android:label="创建帖子"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar" />
+
+        <activity
+            android:name=".community.TopicListActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".community.TopicDetailActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
             
     </application>
 

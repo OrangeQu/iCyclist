@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.icyclist.server.mapper.ForumMapper">
+
+    <!-- ResultMaps -->
+    <resultMap id="CategoryResultMap" type="com.icyclist.server.model.ForumCategory"/>
+
+    <resultMap id="TopicResultMap" type="com.icyclist.server.model.ForumTopic">
+        <id property="id" column="topic_id"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="userId" column="topic_user_id"/>
+        <result property="title" column="topic_title"/>
+        <result property="content" column="topic_content"/>
+        <result property="createdAt" column="topic_created_at"/>
+        <result property="updatedAt" column="topic_updated_at"/>
+        <association property="user" javaType="com.icyclist.server.model.User">
+            <id property="id" column="user_id"/>
+            <result property="username" column="username"/>
+            <result property="nickname" column="nickname"/>
+            <result property="avatar" column="avatar"/>
+        </association>
+    </resultMap>
+
+    <resultMap id="ReplyResultMap" type="com.icyclist.server.model.ForumReply">
+        <id property="id" column="reply_id"/>
+        <result property="topicId" column="topic_id"/>
+        <result property="userId" column="reply_user_id"/>
+        <result property="content" column="reply_content"/>
+        <result property="createdAt" column="reply_created_at"/>
+        <association property="user" javaType="com.icyclist.server.model.User">
+            <id property="id" column="user_id"/>
+            <result property="username" column="username"/>
+            <result property="nickname" column="nickname"/>
+            <result property="avatar" column="avatar"/>
+        </association>
+    </resultMap>
+
+    <!-- Category Queries -->
+    <select id="findAllCategories" resultMap="CategoryResultMap">
+        SELECT * FROM forum_category ORDER BY name ASC
+    </select>
+
+    <select id="findCategoryById" resultMap="CategoryResultMap">
+        SELECT * FROM forum_category WHERE id = #{id}
+    </select>
+
+    <!-- Topic Queries -->
+    <insert id="insertTopic" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO forum_topic (category_id, user_id, title, content)
+        VALUES (#{categoryId}, #{userId}, #{title}, #{content})
+    </insert>
+
+    <select id="findTopicsByCategoryId" resultMap="TopicResultMap">
+        SELECT
+            t.id as topic_id, t.category_id, t.user_id as topic_user_id, t.title as topic_title,
+            t.content as topic_content, t.created_at as topic_created_at, t.updated_at as topic_updated_at,
+            u.id as user_id, u.username, u.nickname, u.avatar
+        FROM forum_topic t
+        LEFT JOIN user u ON t.user_id = u.id
+        WHERE t.category_id = #{categoryId}
+        ORDER BY t.updated_at DESC
+    </select>
+
+    <select id="findTopicById" resultMap="TopicResultMap">
+        SELECT
+            t.id as topic_id, t.category_id, t.user_id as topic_user_id, t.title as topic_title,
+            t.content as topic_content, t.created_at as topic_created_at, t.updated_at as topic_updated_at,
+            u.id as user_id, u.username, u.nickname, u.avatar
+        FROM forum_topic t
+        LEFT JOIN user u ON t.user_id = u.id
+        WHERE t.id = #{id}
+    </select>
+
+    <!-- Reply Queries -->
+    <insert id="insertReply" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO forum_reply (topic_id, user_id, content)
+        VALUES (#{topicId}, #{userId}, #{content})
+    </insert>
+
+    <select id="findRepliesByTopicId" resultMap="ReplyResultMap">
+        SELECT
+            r.id as reply_id, r.topic_id, r.user_id as reply_user_id, r.content as reply_content,
+            r.created_at as reply_created_at,
+            u.id as user_id, u.username, u.nickname, u.avatar
+        FROM forum_reply r
+        LEFT JOIN user u ON r.user_id = u.id
+        WHERE r.topic_id = #{topicId}
+        ORDER BY r.created_at ASC
+    </select>
+
+</mapper>
+

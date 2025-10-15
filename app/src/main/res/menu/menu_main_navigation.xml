@@ -5,6 +5,10 @@
         android:icon="@drawable/ic_twotone_directions_run_24"
         android:title="运动" />
     <item
+        android:id="@+id/menu_moment"
+        android:icon="@drawable/ic_twotone_dynamic_feed_24"
+        android:title="骑行圈" />
+    <item
         android:id="@+id/menu_community"
         android:icon="@drawable/ic_twotone_groups_24"
         android:title="社区" />

@@ -38,6 +38,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.*
+import androidx.core.content.ContextCompat
 
 class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, LocationSource {
     
@@ -52,7 +53,7 @@ class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, Locatio
     private lateinit var tvDistance: TextView
     private lateinit var tvSpeed: TextView
     private lateinit var tvAvgSpeed: TextView
-    private lateinit var btnPause: MaterialButton
+    private lateinit var btnPause: FloatingActionButton
     private lateinit var btnStop: FloatingActionButton
     private lateinit var toolbar: Toolbar
 
@@ -275,16 +276,16 @@ class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, Locatio
             // 继续
             totalPausedDuration += System.currentTimeMillis() - pausedTime
             isPaused = false
-            btnPause.text = "暂停"
-            btnPause.setIconResource(R.drawable.ic_baseline_pause_24)
+            btnPause.setImageResource(R.drawable.ic_baseline_pause_24)
+            btnPause.backgroundTintList = ContextCompat.getColorStateList(this, R.color.purple_500)
             startTimer()
             Toast.makeText(this, "继续运动", Toast.LENGTH_SHORT).show()
         } else {
             // 暂停
             pausedTime = System.currentTimeMillis()
             isPaused = true
-            btnPause.text = "继续"
-            btnPause.setIconResource(R.drawable.ic_baseline_play_arrow_24)
+            btnPause.setImageResource(R.drawable.ic_baseline_play_arrow_24)
+            btnPause.backgroundTintList = ContextCompat.getColorStateList(this, R.color.green)
             stopTimer()
             Toast.makeText(this, "已暂停", Toast.LENGTH_SHORT).show()
         }

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    app:cardElevation="2dp"
+    app:cardCornerRadius="8dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/topicTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="求助！我的新车链条异响怎么办？"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:maxLines="2"
+            android:ellipsize="end"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/authorAvatar"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_twotone_person_24"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toBottomOf="@id/topicTitle"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <TextView
+            android:id="@+id/authorName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="骑行小白"
+            android:layout_marginStart="8dp"
+            app:layout_constraintStart_toEndOf="@id/authorAvatar"
+            app:layout_constraintTop_toTopOf="@id/authorAvatar"
+            app:layout_constraintBottom_toBottomOf="@id/authorAvatar" />
+
+        <TextView
+            android:id="@+id/replyCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="32 回复"
+            android:drawableStart="@drawable/ic_twotone_comment_24"
+            android:drawablePadding="4dp"
+            android:gravity="center_vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/authorAvatar"
+            app:layout_constraintBottom_toBottomOf="@id/authorAvatar"
+            app:drawableTint="?android:attr/textColorSecondary" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

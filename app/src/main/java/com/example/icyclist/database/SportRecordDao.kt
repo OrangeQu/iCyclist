@@ -7,6 +7,9 @@ interface SportRecordDao {
     @Query("SELECT * FROM sport_records ORDER BY startTime DESC")
     suspend fun getAllRecords(): List<SportRecordEntity>
 
+    @Query("SELECT * FROM sport_records ORDER BY startTime DESC LIMIT :limit")
+    suspend fun getLatestRecords(limit: Int): List<SportRecordEntity>
+
     @Query("SELECT * FROM sport_records WHERE id = :id")
     suspend fun getRecordById(id: Long): SportRecordEntity?
 

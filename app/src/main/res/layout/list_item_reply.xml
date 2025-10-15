@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
+
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/replyAuthorAvatar"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_twotone_person_24" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="16dp">
+
+        <TextView
+            android:id="@+id/replyAuthorName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="资深技师"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/replyContent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="大概率是新链条和飞轮没有磨合好，建议先骑50-100公里看看。如果还响，检查一下后拨限位螺丝。" />
+    </LinearLayout>
+
+</LinearLayout>

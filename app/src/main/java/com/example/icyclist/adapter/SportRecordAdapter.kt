@@ -15,7 +15,8 @@ import java.io.File
 class SportRecordAdapter(
     private var records: List<SportRecord>,
     private val onDelete: (SportRecord) -> Unit,
-    private val onShare: (SportRecord) -> Unit
+    private val onShare: (SportRecord) -> Unit,
+    private val onItemClick: (SportRecord) -> Unit
 ) : RecyclerView.Adapter<SportRecordAdapter.RecordViewHolder>() {
 
     class RecordViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -28,12 +29,16 @@ class SportRecordAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecordViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.sport_record_item, parent, false)
+            .inflate(R.layout.item_sport_record, parent, false)
         return RecordViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: RecordViewHolder, position: Int) {
         val record = records[position]
+
+        holder.itemView.setOnClickListener {
+            onItemClick(record)
+        }
 
         holder.itemView.setOnLongClickListener {
             AlertDialog.Builder(holder.itemView.context)

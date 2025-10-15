@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "iCyclist"
 include(":app")
+include(":server")

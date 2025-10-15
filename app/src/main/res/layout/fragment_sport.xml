@@ -100,14 +100,35 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.cardview.widget.CardView>
 
-        <TextView
-            android:layout_width="wrap_content"
+        <RelativeLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="历史记录"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"/>
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="最近的运动"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
+                android:layout_centerVertical="true"
+                android:layout_alignParentStart="true"/>
+
+            <TextView
+                android:id="@+id/tvMoreHistory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="查看全部 >"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
+                android:textColor="?attr/colorPrimary"
+                android:layout_centerVertical="true"
+                android:layout_alignParentEnd="true"
+                android:background="?attr/selectableItemBackground"
+                android:padding="8dp"/>
+
+        </RelativeLayout>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvSportRecords"
@@ -116,7 +137,7 @@
             android:layout_weight="0.6"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
-            tools:listitem="@layout/sport_record_item" />
+            tools:listitem="@layout/item_sport_record" />
 
     </LinearLayout>
 

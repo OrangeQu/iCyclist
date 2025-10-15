@@ -30,6 +30,7 @@ import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.MyLocationStyle
 import com.example.icyclist.MainContainerActivity
 import com.example.icyclist.R
+import com.example.icyclist.SportHistoryActivity
 import com.example.icyclist.SportTrackingActivity
 import com.example.icyclist.adapter.SportRecordAdapter
 import com.example.icyclist.database.SportDatabase
@@ -41,6 +42,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import com.example.icyclist.TrackDetailActivity
 
 class SportFragment : Fragment(), AMapLocationListener, LocationSource {
     
@@ -59,6 +61,7 @@ class SportFragment : Fragment(), AMapLocationListener, LocationSource {
     private var fabLocation: FloatingActionButton? = null
     private var rvSportRecords: RecyclerView? = null
     private var btnStartSport: MaterialButton? = null
+    private var tvMoreHistory: TextView? = null
     
     // 定位状态
     private var isFirstLocation = true
@@ -138,6 +141,7 @@ class SportFragment : Fragment(), AMapLocationListener, LocationSource {
         fabLocation = view.findViewById(R.id.fabLocation)
         rvSportRecords = view.findViewById(R.id.rvSportRecords)
         btnStartSport = view.findViewById(R.id.btnStartSport)
+        tvMoreHistory = view.findViewById(R.id.tvMoreHistory)
         
         // 设置定位按钮点击事件
         fabLocation?.setOnClickListener {
@@ -156,12 +160,23 @@ class SportFragment : Fragment(), AMapLocationListener, LocationSource {
             startActivity(intent)
         }
         
+        tvMoreHistory?.setOnClickListener {
+            val intent = Intent(requireContext(), SportHistoryActivity::class.java)
+            startActivity(intent)
+        }
+
         // RecyclerView设置
         rvSportRecords?.layoutManager = LinearLayoutManager(requireContext())
         sportRecordAdapter = SportRecordAdapter(
             sportRecords,
             onDelete = { record -> deleteSportRecord(record) },
-            onShare = { record -> shareSportRecord(record) }
+            onShare = { record -> shareSportRecord(record) },
+            onItemClick = { record ->
+                val intent = Intent(requireContext(), TrackDetailActivity::class.java).apply {
+                    putExtra("SPORT_RECORD_ID", record.id)
+                }
+                startActivity(intent)
+            }
         )
         rvSportRecords?.adapter = sportRecordAdapter
     }
@@ -446,7 +461,7 @@ class SportFragment : Fragment(), AMapLocationListener, LocationSource {
         lifecycleScope.launch {
             try {
                 val entities = withContext(Dispatchers.IO) {
-                    sportDatabase.sportRecordDao().getAllRecords()
+                    sportDatabase.sportRecordDao().getLatestRecords(3)
                 }
                 
                 sportRecords.clear()

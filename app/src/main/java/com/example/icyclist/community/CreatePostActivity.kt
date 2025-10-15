@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -54,8 +55,6 @@ class CreatePostActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
-        // 添加返回按钮
-        binding.toolbar.setNavigationIcon(com.example.icyclist.R.drawable.ic_arrow_back)
         binding.toolbar.setNavigationOnClickListener {
             finish()
         }
@@ -108,14 +107,16 @@ class CreatePostActivity : AppCompatActivity() {
 
     private fun showSelectedImage(uri: Uri) {
         binding.ivSelectedImage.setImageURI(uri)
-        binding.layoutImagePreview.visibility = LinearLayout.VISIBLE
+        binding.ivSelectedImage.visibility = View.VISIBLE
+        binding.btnRemoveImage.visibility = View.VISIBLE
         saveImageToInternalStorage(uri)
     }
 
     private fun removeSelectedImage() {
         selectedImageUri = null
         savedImagePath = null
-        binding.layoutImagePreview.visibility = LinearLayout.GONE
+        binding.ivSelectedImage.visibility = View.GONE
+        binding.btnRemoveImage.visibility = View.GONE
     }
 
     private fun saveImageToInternalStorage(uri: Uri) {
@@ -179,21 +180,6 @@ class CreatePostActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-
-    private fun createNewPost(content: String): Post {
-        return Post(
-            id = UUID.randomUUID().toString(),
-            userId = "current_user",
-            userName = "骑行爱好者", // 这里应该从用户信息获取
-            userAvatar = "https://example.com/avatar1.jpg",
-            content = content,
-            imageUrl = selectedImageUri?.toString(), // 实际应用中需要上传图片到服务器
-            timestamp = Date(),
-            likes = 0,
-            comments = 0,
-            isLiked = false
-        )
     }
 
     override fun onBackPressed() {
