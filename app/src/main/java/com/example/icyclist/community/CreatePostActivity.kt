@@ -49,6 +49,18 @@ class CreatePostActivity : AppCompatActivity() {
         setupToolbar()
         setupViews()
         setupTextWatcher()
+        handleIncomingImage()
+    }
+
+    private fun handleIncomingImage() {
+        if (intent.hasExtra("image_uri")) {
+            val imageUriString = intent.getStringExtra("image_uri")
+            if (imageUriString != null) {
+                val imageUri = Uri.parse(imageUriString)
+                selectedImageUri = imageUri
+                showSelectedImage(imageUri)
+            }
+        }
     }
 
     private fun setupToolbar() {

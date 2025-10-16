@@ -13,6 +13,8 @@
         android:theme="@style/Theme.ICyclist"
         android:largeHeap="true"
         android:hardwareAccelerated="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
         
         <!-- 高德地图API密钥 -->

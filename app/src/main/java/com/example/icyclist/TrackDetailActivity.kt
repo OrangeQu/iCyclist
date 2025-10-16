@@ -1,8 +1,13 @@
 package com.example.icyclist
 
+import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -14,12 +19,16 @@ import com.amap.api.maps.MapView
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.LatLngBounds
 import com.amap.api.maps.model.PolylineOptions
+import com.example.icyclist.community.CreatePostActivity
 import com.example.icyclist.database.Converters
 import com.example.icyclist.database.SportDatabase
 import com.example.icyclist.database.SportRecordEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 
 class TrackDetailActivity : AppCompatActivity() {
 
@@ -62,6 +71,69 @@ class TrackDetailActivity : AppCompatActivity() {
 
         sportDatabase = SportDatabase.getDatabase(this)
         loadTrackDetails()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_track_detail, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_share -> {
+                shareTrack()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun shareTrack() {
+        aMap?.getMapScreenShot(object : AMap.OnMapScreenShotListener {
+            override fun onMapScreenShot(bitmap: Bitmap?) {
+                if (bitmap == null) {
+                    Toast.makeText(this@TrackDetailActivity, "分享失败，无法获取地图截图", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                saveBitmapAndShare(bitmap)
+            }
+
+            override fun onMapScreenShot(bitmap: Bitmap?, status: Int) {
+                // onMapScreenShot(Bitmap) will be called, so this can be ignored
+            }
+        })
+    }
+
+    private fun saveBitmapAndShare(bitmap: Bitmap) {
+        lifecycleScope.launch {
+            val imagePath = withContext(Dispatchers.IO) {
+                saveBitmapToCache(bitmap)
+            }
+            if (imagePath != null) {
+                val imageUri = Uri.fromFile(File(imagePath))
+                val intent = Intent(this@TrackDetailActivity, CreatePostActivity::class.java).apply {
+                    putExtra("image_uri", imageUri.toString())
+                }
+                startActivity(intent)
+            } else {
+                Toast.makeText(this@TrackDetailActivity, "分享失败，无法保存地图截图", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun saveBitmapToCache(bitmap: Bitmap): String? {
+        val imageFileName = "track_share_${System.currentTimeMillis()}.png"
+        val cacheDir = cacheDir
+        val imageFile = File(cacheDir, imageFileName)
+        try {
+            FileOutputStream(imageFile).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+            return imageFile.absolutePath
+        } catch (e: IOException) {
+            Log.e("TrackDetailActivity", "Error saving bitmap", e)
+            return null
+        }
     }
 
     private fun loadTrackDetails() {

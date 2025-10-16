@@ -39,26 +39,26 @@ class JwtTokenProvider {
         val expiryDate = Date(now.time + jwtExpirationInMs.toLong())
 
         return Jwts.builder()
-            .subject(user.id.toString())
-            .issuedAt(now)
-            .expiration(expiryDate)
+            .setSubject(user.id.toString())
+            .setIssuedAt(now)
+            .setExpiration(expiryDate)
             .signWith(key)
             .compact()
     }
 
     fun getUserIdFromJWT(token: String): Long {
-        val claims: Claims = Jwts.parser()
-            .verifyWith(key)
+        val claims: Claims = Jwts.parserBuilder()
+            .setSigningKey(key)
             .build()
-            .parseSignedClaims(token)
-            .payload
+            .parseClaimsJws(token)
+            .body
 
         return claims.subject.toLong()
     }
 
     fun validateToken(authToken: String): Boolean {
         try {
-            Jwts.parser().verifyWith(key).build().parseSignedClaims(authToken)
+            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(authToken)
             return true
         } catch (ex: SignatureException) {
             logger.error("Invalid JWT signature")

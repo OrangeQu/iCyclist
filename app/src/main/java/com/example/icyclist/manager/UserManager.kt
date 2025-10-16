@@ -12,6 +12,8 @@ object UserManager {
     private const val KEY_USER_PREFIX = "user_"
     private const val KEY_NICKNAME_PREFIX = "nickname_"
     private const val KEY_AVATAR_PREFIX = "avatar_"
+    private const val KEY_AUTH_TOKEN = "auth_token"
+    private const val KEY_USER_ID = "user_id"
     
     private fun getPreferences(context: Context): SharedPreferences {
         return try {
@@ -100,5 +102,54 @@ object UserManager {
         getPreferences(context).edit()
             .putString("$KEY_AVATAR_PREFIX$email", avatarPath)
             .apply()
+    }
+    
+    // ==================== JWT Token 相关方法 ====================
+    
+    /**
+     * 保存认证 Token（登录成功后调用）
+     */
+    fun saveAuthToken(context: Context, token: String) {
+        getPreferences(context).edit()
+            .putString(KEY_AUTH_TOKEN, token)
+            .apply()
+    }
+    
+    /**
+     * 获取认证 Token
+     */
+    fun getAuthToken(context: Context): String? {
+        return getPreferences(context).getString(KEY_AUTH_TOKEN, null)
+    }
+    
+    /**
+     * 清除认证 Token（退出登录时调用）
+     */
+    fun clearAuthToken(context: Context) {
+        getPreferences(context).edit()
+            .remove(KEY_AUTH_TOKEN)
+            .remove(KEY_USER_ID)
+            .apply()
+    }
+    
+    /**
+     * 保存用户 ID
+     */
+    fun saveUserId(context: Context, userId: Long) {
+        getPreferences(context).edit()
+            .putLong(KEY_USER_ID, userId)
+            .apply()
+    }
+    
+    /**
+     * 获取用户 ID
+     */
+    fun getUserId(context: Context): Long? {
+        val prefs = getPreferences(context)
+        return if (prefs.contains(KEY_USER_ID)) {
+            prefs.getLong(KEY_USER_ID, -1)
+        } else {
+            null
+        }
     }
 }

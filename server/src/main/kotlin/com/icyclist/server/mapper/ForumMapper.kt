@@ -21,3 +21,16 @@ interface ForumMapper {
     fun findRepliesByTopicId(topicId: Long): List<ForumReply>
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+

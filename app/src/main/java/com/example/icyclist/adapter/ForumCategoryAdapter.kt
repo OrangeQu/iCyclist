@@ -45,8 +45,7 @@ class ForumCategoryAdapter(private val categories: List<ForumCategory>) :
             val context = holder.itemView.context
             val intent = Intent(context, TopicListActivity::class.java).apply {
                 putExtra("CATEGORY_NAME", category.name)
-                // You can also pass category.id to fetch specific topics later
-                // putExtra("CATEGORY_ID", category.id)
+                putExtra("CATEGORY_ID", category.id.toLong())
             }
             context.startActivity(intent)
         }

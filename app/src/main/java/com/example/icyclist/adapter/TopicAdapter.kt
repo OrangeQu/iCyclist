@@ -41,8 +41,7 @@ class TopicAdapter(private val topics: List<Topic>) :
             val context = holder.itemView.context
             val intent = Intent(context, TopicDetailActivity::class.java).apply {
                 putExtra("TOPIC_TITLE", topic.title)
-                // You can also pass topic.id to fetch specific data later
-                // putExtra("TOPIC_ID", topic.id)
+                putExtra("TOPIC_ID", topic.id.toLong())
             }
             context.startActivity(intent)
         }
