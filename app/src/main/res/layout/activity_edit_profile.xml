@@ -47,8 +47,7 @@
                     android:layout_width="128dp"
                     android:layout_height="128dp"
                     android:src="@drawable/ic_twotone_person_24"
-                    android:background="@drawable/avatar_background"
-                    android:padding="32dp"
+                    android:scaleType="centerCrop"
                     android:contentDescription="头像" />
 
             </com.google.android.material.card.MaterialCardView>

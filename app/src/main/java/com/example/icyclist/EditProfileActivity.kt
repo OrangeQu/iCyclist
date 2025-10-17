@@ -10,6 +10,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -71,12 +73,37 @@ class EditProfileActivity : AppCompatActivity() {
         etNickname.setText(nickname ?: "")
 
         currentAvatarPath = avatarPath
-        if (!avatarPath.isNullOrEmpty()) {
+        loadAvatar(avatarPath)
+    }
+
+    private fun loadAvatar(avatarPath: String?) {
+        if (!avatarPath.isNullOrEmpty() && avatarPath.startsWith("/")) {
+            // 自定义头像路径
             val file = File(avatarPath)
             if (file.exists()) {
-                imgAvatar.setImageURI(Uri.fromFile(file))
+                // 移除padding和背景
+                imgAvatar.setPadding(0, 0, 0, 0)
+                imgAvatar.background = null
+                
+                Glide.with(this)
+                    .load(file)
+                    .centerCrop()
+                    .into(imgAvatar)
+            } else {
+                // 文件不存在，显示默认头像
+                loadDefaultAvatar()
             }
+        } else {
+            // 默认头像（icon）
+            loadDefaultAvatar()
         }
+    }
+
+    private fun loadDefaultAvatar() {
+        imgAvatar.setImageResource(R.drawable.ic_twotone_person_24)
+        val paddingPx = (32 * resources.displayMetrics.density).toInt()
+        imgAvatar.setPadding(paddingPx, paddingPx, paddingPx, paddingPx)
+        imgAvatar.setBackgroundResource(R.drawable.avatar_background)
     }
 
     private fun setupListeners() {
@@ -112,7 +139,16 @@ class EditProfileActivity : AppCompatActivity() {
             }
 
             currentAvatarPath = avatarFile.absolutePath
-            imgAvatar.setImageURI(Uri.fromFile(avatarFile))
+            
+            // 移除padding和背景，显示自定义头像
+            imgAvatar.setPadding(0, 0, 0, 0)
+            imgAvatar.background = null
+            
+            // 使用Glide加载图片，自动适配圆形
+            Glide.with(this)
+                .load(avatarFile)
+                .centerCrop()
+                .into(imgAvatar)
             
         } catch (e: Exception) {
             Toast.makeText(this, "头像保存失败: ${e.message}", Toast.LENGTH_SHORT).show()

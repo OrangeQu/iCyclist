@@ -93,6 +93,12 @@
             android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar" />
 
         <activity
+            android:name=".PostDetailActivity"
+            android:exported="false"
+            android:label="帖子详情"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".community.TopicListActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
@@ -100,6 +106,12 @@
         <activity
             android:name=".community.TopicDetailActivity"
             android:exported="false"
+            android:screenOrientation="portrait" />
+            
+        <activity
+            android:name=".community.CreateTopicActivity"
+            android:exported="false"
+            android:label="发布主题"
             android:screenOrientation="portrait" />
             
     </application>

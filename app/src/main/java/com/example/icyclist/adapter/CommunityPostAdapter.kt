@@ -20,6 +20,13 @@ class CommunityPostAdapter(
 ) : RecyclerView.Adapter<CommunityPostAdapter.PostViewHolder>() {
 
     var onDeleteClickListener: ((CommunityPostEntity) -> Unit)? = null
+    var onLikeClickListener: ((CommunityPostEntity) -> Unit)? = null
+    var onCommentClickListener: ((CommunityPostEntity) -> Unit)? = null
+    
+    // 用于存储每个帖子的点赞状态和数量
+    private val likeStates = mutableMapOf<Int, Boolean>()  // postId -> isLiked
+    private val likeCounts = mutableMapOf<Int, Int>()      // postId -> likeCount
+    private val commentCounts = mutableMapOf<Int, Int>()   // postId -> commentCount
 
     class PostViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val ivAvatar: ImageView = itemView.findViewById(R.id.iv_user_avatar)
@@ -28,6 +35,27 @@ class CommunityPostAdapter(
         val tvContent: TextView = itemView.findViewById(R.id.tv_post_content)
         val ivPostImage: ImageView = itemView.findViewById(R.id.iv_post_image)
         val ivPostOptions: ImageButton = itemView.findViewById(R.id.iv_post_options)
+        val btnLike: ImageButton = itemView.findViewById(R.id.btn_like)
+        val tvLikeCount: TextView = itemView.findViewById(R.id.tv_like_count)
+        val btnComment: ImageButton = itemView.findViewById(R.id.btn_comment)
+        val tvCommentCount: TextView = itemView.findViewById(R.id.tv_comment_count)
+    }
+    
+    /**
+     * 更新点赞状态
+     */
+    fun updateLikeState(postId: Int, isLiked: Boolean, likeCount: Int) {
+        likeStates[postId] = isLiked
+        likeCounts[postId] = likeCount
+        notifyDataSetChanged()
+    }
+    
+    /**
+     * 更新评论数量
+     */
+    fun updateCommentCount(postId: Int, commentCount: Int) {
+        commentCounts[postId] = commentCount
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostViewHolder {
@@ -77,6 +105,32 @@ class CommunityPostAdapter(
                 .into(holder.ivPostImage)
         } else {
             holder.ivPostImage.visibility = View.GONE
+        }
+        
+        // 设置点赞状态和数量
+        val isLiked = likeStates[post.id] ?: false
+        val likeCount = likeCounts[post.id] ?: post.likes
+        holder.tvLikeCount.text = likeCount.toString()
+        
+        // 更新点赞按钮图标
+        if (isLiked) {
+            holder.btnLike.setImageResource(R.drawable.ic_liked)
+        } else {
+            holder.btnLike.setImageResource(R.drawable.ic_like)
+        }
+        
+        // 点赞按钮点击事件
+        holder.btnLike.setOnClickListener {
+            onLikeClickListener?.invoke(post)
+        }
+        
+        // 设置评论数量
+        val commentCount = commentCounts[post.id] ?: post.comments
+        holder.tvCommentCount.text = commentCount.toString()
+        
+        // 评论按钮点击事件
+        holder.btnComment.setOnClickListener {
+            onCommentClickListener?.invoke(post)
         }
     }
 

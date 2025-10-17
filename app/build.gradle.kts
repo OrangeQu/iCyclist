@@ -117,20 +117,6 @@ task("printSHA1") {
     }
 }
 
-kapt {
-    javacOptions {
-        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED")
-        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED")
-        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED")
-        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED")
-        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED")
-        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED")
-        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED")
-        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED")
-        option("-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED")
-    }
-}
-
 // ✅ dependencies 代码块必须独立放置，与 android { } 块同级
 dependencies {
     implementation(libs.androidx.core.ktx)
@@ -151,6 +137,12 @@ dependencies {
 
     // Gson for JSON serialization
     implementation("com.google.code.gson:gson:2.10.1")
+    
+    // Retrofit 网络请求库
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     
     // androidx.security for EncryptedSharedPreferences
     implementation("androidx.security:security-crypto:1.1.0-alpha06")

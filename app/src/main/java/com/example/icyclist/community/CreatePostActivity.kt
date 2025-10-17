@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
 import com.example.icyclist.databinding.ActivityCreatePostBinding
 import com.example.icyclist.database.CommunityPostEntity
 import com.example.icyclist.database.SportDatabase
@@ -118,9 +119,16 @@ class CreatePostActivity : AppCompatActivity() {
     }
 
     private fun showSelectedImage(uri: Uri) {
-        binding.ivSelectedImage.setImageURI(uri)
+        // 使用 Glide 加载图片，避免 OOM
+        Glide.with(this)
+            .load(uri)
+            .centerCrop()
+            .into(binding.ivSelectedImage)
+        
         binding.ivSelectedImage.visibility = View.VISIBLE
         binding.btnRemoveImage.visibility = View.VISIBLE
+        
+        // 在后台线程保存图片
         saveImageToInternalStorage(uri)
     }
 
@@ -132,23 +140,34 @@ class CreatePostActivity : AppCompatActivity() {
     }
 
     private fun saveImageToInternalStorage(uri: Uri) {
-        try {
-            val inputStream = contentResolver.openInputStream(uri)
-            val imagesDir = File(filesDir, "post_images")
-            if (!imagesDir.exists()) {
-                imagesDir.mkdirs()
-            }
-            val imageFile = File(imagesDir, "post_${System.currentTimeMillis()}.jpg")
-            val outputStream = FileOutputStream(imageFile)
-            inputStream?.use { input ->
-                outputStream.use { output ->
-                    input.copyTo(output)
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val inputStream = contentResolver.openInputStream(uri)
+                val imagesDir = File(filesDir, "post_images")
+                if (!imagesDir.exists()) {
+                    imagesDir.mkdirs()
+                }
+                val imageFile = File(imagesDir, "post_${System.currentTimeMillis()}.jpg")
+                val outputStream = FileOutputStream(imageFile)
+                inputStream?.use { input ->
+                    outputStream.use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                savedImagePath = imageFile.absolutePath
+                
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@CreatePostActivity, "图片已选择", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@CreatePostActivity, "图片处理失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    savedImagePath = null
+                    // 隐藏图片预览
+                    binding.ivSelectedImage.visibility = View.GONE
+                    binding.btnRemoveImage.visibility = View.GONE
                 }
             }
-            savedImagePath = imageFile.absolutePath
-        } catch (e: Exception) {
-            Toast.makeText(this, "图片处理失败: ${e.message}", Toast.LENGTH_SHORT).show()
-            savedImagePath = null
         }
     }
 

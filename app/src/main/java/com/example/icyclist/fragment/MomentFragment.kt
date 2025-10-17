@@ -12,8 +12,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.icyclist.adapter.CommunityPostAdapter
 import com.example.icyclist.community.CreatePostActivity
 import com.example.icyclist.database.CommunityPostEntity
+import com.example.icyclist.database.LikeEntity
 import com.example.icyclist.database.SportDatabase
 import com.example.icyclist.databinding.FragmentMomentBinding
+import com.example.icyclist.manager.UserManager
 import com.example.icyclist.network.RetrofitClient
 import com.example.icyclist.network.model.Post
 import kotlinx.coroutines.Dispatchers
@@ -50,20 +52,26 @@ class MomentFragment : Fragment() {
         setupRecyclerView()
         setupFab()
         
-        // 从网络加载数据
-        loadPostsFromNetwork()
+        // 直接从本地数据库加载数据
+        loadPostsFromLocalDatabase()
     }
 
     override fun onResume() {
         super.onResume()
         // 每次回到这个界面时刷新数据
-        loadPostsFromNetwork()
+        loadPostsFromLocalDatabase()
     }
 
     private fun setupRecyclerView() {
         postAdapter = CommunityPostAdapter(posts).apply {
             onDeleteClickListener = { post ->
                 deletePost(post)
+            }
+            onLikeClickListener = { post ->
+                handleLike(post)
+            }
+            onCommentClickListener = { post ->
+                handleComment(post)
             }
         }
         
@@ -146,14 +154,98 @@ class MomentFragment : Fragment() {
      */
     private fun loadPostsFromLocalDatabase() {
         lifecycleScope.launch {
-            val localPosts = withContext(Dispatchers.IO) {
-                sportDatabase.communityPostDao().getAllPosts()
+            try {
+                val localPosts = withContext(Dispatchers.IO) {
+                    sportDatabase.communityPostDao().getAllPosts()
+                }
+                
+                posts.clear()
+                posts.addAll(localPosts)
+                
+                // 加载每个帖子的点赞和评论数据
+                val currentUserId = UserManager.getCurrentUserEmail(requireContext()) ?: ""
+                
+                // 使用副本避免并发修改异常
+                val postsCopy = posts.toList()
+                
+                postsCopy.forEach { post ->
+                    val likeCount = withContext(Dispatchers.IO) {
+                        sportDatabase.likeDao().getLikeCount(post.id)
+                    }
+                    val isLiked = withContext(Dispatchers.IO) {
+                        sportDatabase.likeDao().isLiked(post.id, currentUserId)
+                    }
+                    val commentCount = withContext(Dispatchers.IO) {
+                        sportDatabase.commentDao().getCommentCount(post.id)
+                    }
+                    
+                    postAdapter?.updateLikeState(post.id, isLiked, likeCount)
+                    postAdapter?.updateCommentCount(post.id, commentCount)
+                }
+                
+                postAdapter?.notifyDataSetChanged()
+            } catch (e: Exception) {
+                android.util.Log.e("MomentFragment", "加载帖子失败", e)
+                withContext(Dispatchers.Main) {
+                    if (isAdded) {
+                        Toast.makeText(requireContext(), "加载失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
-            
-            posts.clear()
-            posts.addAll(localPosts)
-            postAdapter?.notifyDataSetChanged()
         }
+    }
+    
+    /**
+     * 处理点赞/取消点赞
+     */
+    private fun handleLike(post: CommunityPostEntity) {
+        lifecycleScope.launch {
+            try {
+                val currentUserId = UserManager.getCurrentUserEmail(requireContext()) ?: ""
+                
+                val isLiked = withContext(Dispatchers.IO) {
+                    sportDatabase.likeDao().isLiked(post.id, currentUserId)
+                }
+                
+                if (isLiked) {
+                    // 取消点赞
+                    withContext(Dispatchers.IO) {
+                        sportDatabase.likeDao().deleteLike(post.id, currentUserId)
+                    }
+                } else {
+                    // 点赞
+                    val like = LikeEntity(
+                        postId = post.id,
+                        userId = currentUserId
+                    )
+                    withContext(Dispatchers.IO) {
+                        sportDatabase.likeDao().insertLike(like)
+                    }
+                }
+                
+                // 更新UI
+                val newLikeCount = withContext(Dispatchers.IO) {
+                    sportDatabase.likeDao().getLikeCount(post.id)
+                }
+                val newIsLiked = withContext(Dispatchers.IO) {
+                    sportDatabase.likeDao().isLiked(post.id, currentUserId)
+                }
+                
+                postAdapter?.updateLikeState(post.id, newIsLiked, newLikeCount)
+                
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "操作失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    /**
+     * 处理评论按钮点击，打开帖子详情页面
+     */
+    private fun handleComment(post: CommunityPostEntity) {
+        val intent = Intent(requireContext(), com.example.icyclist.PostDetailActivity::class.java)
+        intent.putExtra(com.example.icyclist.PostDetailActivity.EXTRA_POST_ID, post.id)
+        startActivity(intent)
     }
 
     /**

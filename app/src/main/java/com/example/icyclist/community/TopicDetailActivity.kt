@@ -1,28 +1,39 @@
 package com.example.icyclist.community
 
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.icyclist.adapter.Reply
 import com.example.icyclist.adapter.ReplyAdapter
+import com.example.icyclist.database.ForumReplyEntity
+import com.example.icyclist.database.SportDatabase
 import com.example.icyclist.databinding.ActivityTopicDetailBinding
+import com.example.icyclist.manager.UserManager
 import com.example.icyclist.network.RetrofitClient
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class TopicDetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityTopicDetailBinding
-    private var topicId: Long = 0
+    private lateinit var sportDatabase: SportDatabase
+    private var topicId: Int = 0
+    private val replies = mutableListOf<Reply>()
+    private var replyAdapter: ReplyAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityTopicDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        sportDatabase = SportDatabase.getDatabase(this)
+
         val topicTitle = intent.getStringExtra("TOPIC_TITLE") ?: "帖子详情"
-        topicId = intent.getLongExtra("TOPIC_ID", 0)
+        topicId = intent.getIntExtra("TOPIC_ID", 0)
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.title = topicTitle
@@ -30,81 +41,138 @@ class TopicDetailActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener { onBackPressed() }
 
         setupRepliesRecyclerView()
+        setupReplyButton()
         
-        // 如果有 topicId，从网络加载数据
+        // 从本地数据库加载数据
         if (topicId > 0) {
-            loadTopicDetails(topicId)
+            loadTopicFromDatabase(topicId)
         } else {
-            showFallbackData()
+            Toast.makeText(this, "主题不存在", Toast.LENGTH_SHORT).show()
+            finish()
         }
     }
 
     private fun setupRepliesRecyclerView() {
+        replyAdapter = ReplyAdapter(replies)
         binding.repliesRecyclerView.layoutManager = LinearLayoutManager(this)
+        binding.repliesRecyclerView.adapter = replyAdapter
     }
-
-    /**
-     * 从网络加载主题详情
-     */
-    private fun loadTopicDetails(topicId: Long) {
-        lifecycleScope.launch {
-            try {
-                val apiService = RetrofitClient.getApiService(this@TopicDetailActivity)
-                val response = apiService.getTopicDetails(topicId)
-                
-                if (response.isSuccessful) {
-                    val topic = response.body()
-                    
-                    if (topic != null) {
-                        // 更新主题信息
-                        binding.topicTitle.text = topic.title
-                        binding.authorName.text = topic.user?.nickname ?: "匿名用户"
-                        binding.topicBody.text = topic.content
-                        
-                        // 更新回复列表
-                        val replies = topic.replies?.map { networkReply ->
-                            Reply(
-                                id = networkReply.id?.toInt() ?: 0,
-                                authorName = networkReply.user?.nickname ?: "匿名用户",
-                                content = networkReply.content
-                            )
-                        } ?: emptyList()
-                        
-                        binding.repliesRecyclerView.adapter = ReplyAdapter(replies)
-                    } else {
-                        showErrorAndUseFallbackData("主题不存在")
-                    }
-                } else {
-                    showErrorAndUseFallbackData("加载失败: ${response.code()}")
-                }
-            } catch (e: Exception) {
-                showErrorAndUseFallbackData("网络错误: ${e.message}")
-            }
+    
+    private fun setupReplyButton() {
+        // 检查布局中是否有回复输入框和按钮
+        // 如果没有，可以在点击时显示一个对话框
+        // 这里先用一个简单的Toast提示，后续可以优化为对话框
+        binding.root.findViewById<View?>(com.example.icyclist.R.id.btn_send_reply)?.setOnClickListener {
+            sendReply()
         }
     }
 
     /**
-     * 显示错误信息并使用后备数据
+     * 从本地数据库加载主题详情
      */
-    private fun showErrorAndUseFallbackData(errorMessage: String) {
-        Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
-        showFallbackData()
+    private fun loadTopicFromDatabase(topicId: Int) {
+        lifecycleScope.launch {
+            try {
+                // 加载主题信息
+                val topic = withContext(Dispatchers.IO) {
+                    sportDatabase.forumTopicDao().getTopicById(topicId)
+                }
+                
+                if (topic != null) {
+                    // 更新主题信息
+                    binding.topicTitle.text = topic.title
+                    binding.authorName.text = topic.userNickname
+                    binding.topicBody.text = topic.content
+                    
+                    // 加载回复列表
+                    loadReplies(topicId)
+                } else {
+                    Toast.makeText(this@TopicDetailActivity, "主题不存在", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@TopicDetailActivity, "加载失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
-
+    
     /**
-     * 显示后备假数据
+     * 加载回复列表
      */
-    private fun showFallbackData() {
-        binding.topicTitle.text = intent.getStringExtra("TOPIC_TITLE") ?: "帖子详情"
-        binding.authorName.text = "骑行小白"
-        binding.topicBody.text = "上周刚入手一辆新公路车，骑了两次之后发现每次用力踩踏的时候，链条都会传来咔咔的异响，请问各位大佬这是什么原因？是需要调整变速器还是链条需要上油了？"
+    private fun loadReplies(topicId: Int) {
+        lifecycleScope.launch {
+            try {
+                val dbReplies = withContext(Dispatchers.IO) {
+                    sportDatabase.forumReplyDao().getRepliesByTopicId(topicId)
+                }
+                
+                // 转换为Adapter需要的格式
+                replies.clear()
+                replies.addAll(dbReplies.map { dbReply ->
+                    Reply(
+                        id = dbReply.id,
+                        authorName = dbReply.userNickname,
+                        content = dbReply.content
+                    )
+                })
+                
+                replyAdapter?.notifyDataSetChanged()
+                
+            } catch (e: Exception) {
+                Toast.makeText(this@TopicDetailActivity, "加载回复失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    /**
+     * 发送回复
+     * 由于布局可能没有输入框，这里使用AlertDialog
+     */
+    private fun sendReply() {
+        val input = android.widget.EditText(this)
+        input.hint = "输入你的回复..."
+        input.maxLines = 5
         
-        val sampleReplies = listOf(
-            Reply(1, "资深技师", "大概率是新链条和飞轮没有磨合好，建议先骑50-100公里看看。如果还响，检查一下后拨限位螺丝。"),
-            Reply(2, "骑行小白", "好的，感谢大佬！我周末再去骑骑看。"),
-            Reply(3, "热心车友", "也可以检查一下脚踏是不是松了，有时候异响来源很奇怪的。")
-        )
-        
-        binding.repliesRecyclerView.adapter = ReplyAdapter(sampleReplies)
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("回复")
+            .setView(input)
+            .setPositiveButton("发送") { _, _ ->
+                val content = input.text.toString().trim()
+                if (content.isEmpty()) {
+                    Toast.makeText(this, "请输入回复内容", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                
+                lifecycleScope.launch {
+                    try {
+                        val currentUserId = UserManager.getCurrentUserEmail(this@TopicDetailActivity) ?: ""
+                        val currentUserNickname = UserManager.getCurrentUserNickname(this@TopicDetailActivity) ?: "骑行者"
+                        val currentUserAvatar = UserManager.getCurrentUserAvatar(this@TopicDetailActivity) ?: "ic_twotone_person_24"
+                        
+                        val reply = ForumReplyEntity(
+                            topicId = topicId,
+                            userId = currentUserId,
+                            userNickname = currentUserNickname,
+                            userAvatar = currentUserAvatar,
+                            content = content
+                        )
+                        
+                        withContext(Dispatchers.IO) {
+                            sportDatabase.forumReplyDao().insertReply(reply)
+                            sportDatabase.forumTopicDao().incrementReplyCount(topicId)
+                        }
+                        
+                        Toast.makeText(this@TopicDetailActivity, "回复成功", Toast.LENGTH_SHORT).show()
+                        
+                        // 重新加载回复列表
+                        loadReplies(topicId)
+                        
+                    } catch (e: Exception) {
+                        Toast.makeText(this@TopicDetailActivity, "回复失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 }
