@@ -51,6 +51,7 @@ class MomentFragment : Fragment() {
         
         setupRecyclerView()
         setupFab()
+        setupSwipeRefresh()
         
         // 直接从本地数据库加载数据
         loadPostsFromLocalDatabase()
@@ -85,6 +86,23 @@ class MomentFragment : Fragment() {
         binding.fabCreatePost.setOnClickListener {
             val intent = Intent(requireContext(), CreatePostActivity::class.java)
             startActivity(intent)
+        }
+    }
+
+    /**
+     * 设置下拉刷新
+     */
+    private fun setupSwipeRefresh() {
+        binding.swipeRefresh.setColorSchemeResources(
+            android.R.color.holo_blue_bright,
+            android.R.color.holo_green_light,
+            android.R.color.holo_orange_light,
+            android.R.color.holo_red_light
+        )
+        
+        binding.swipeRefresh.setOnRefreshListener {
+            // 下拉刷新时重新加载数据
+            loadPostsFromLocalDatabase()
         }
     }
 
@@ -180,6 +198,9 @@ class MomentFragment : Fragment() {
                     }
                     
                     android.util.Log.d("MomentFragment", "✅ 从服务器加载 ${posts.size} 条帖子")
+                    
+                    // 停止刷新动画
+                    binding.swipeRefresh.isRefreshing = false
                 } else {
                     // 服务器请求失败，从本地缓存加载
                     android.util.Log.w("MomentFragment", "服务器请求失败，从本地缓存加载")
@@ -227,6 +248,9 @@ class MomentFragment : Fragment() {
                 
                 postAdapter?.notifyDataSetChanged()
                 android.util.Log.d("MomentFragment", "从本地缓存加载 ${posts.size} 条帖子")
+                
+                // 停止刷新动画
+                binding.swipeRefresh.isRefreshing = false
             } catch (e: Exception) {
                 android.util.Log.e("MomentFragment", "加载帖子失败", e)
                 withContext(Dispatchers.Main) {
@@ -234,6 +258,9 @@ class MomentFragment : Fragment() {
                         Toast.makeText(requireContext(), "加载失败: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
+                
+                // 停止刷新动画
+                binding.swipeRefresh.isRefreshing = false
             }
         }
     }
