@@ -28,6 +28,14 @@ class JwtAuthenticationFilter(
         filterChain: FilterChain
     ) {
         try {
+            // 对于登录和注册接口，直接放行，不处理JWT
+            val path = request.requestURI
+            if (path == "/api/users/login" || path == "/api/users/register") {
+                logger.info("放行登录/注册请求: $path")
+                filterChain.doFilter(request, response)
+                return
+            }
+
             getJwtFromRequest(request)?.let { jwt ->
                 if (tokenProvider.validateToken(jwt)) {
                     val userId = tokenProvider.getUserIdFromJWT(jwt)

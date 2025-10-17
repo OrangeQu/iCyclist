@@ -10,6 +10,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.google.android.material.appbar.MaterialToolbar
@@ -17,6 +18,9 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.example.icyclist.manager.UserManager
+import com.example.icyclist.network.RetrofitClient
+import com.example.icyclist.network.model.ProfileRequest
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 
@@ -170,16 +174,55 @@ class EditProfileActivity : AppCompatActivity() {
             return
         }
 
-        // 保存昵称
-        UserManager.updateNickname(this, nickname)
+        // 禁用按钮防止重复点击
+        btnSave.isEnabled = false
+        btnSave.text = "保存中..."
 
-        // 保存头像路径
-        currentAvatarPath?.let {
-            UserManager.updateAvatar(this, it)
+        lifecycleScope.launch {
+            try {
+                val userId = UserManager.getUserId(this@EditProfileActivity)
+                if (userId != null && userId > 0) {
+                    // 1. 提交到服务器
+                    val apiService = RetrofitClient.getApiService(this@EditProfileActivity)
+                    val profileRequest = ProfileRequest(
+                        nickname = nickname,
+                        avatar = currentAvatarPath
+                    )
+                    
+                    val response = apiService.updateUserProfile(userId, profileRequest)
+                    
+                    if (response.isSuccessful && response.body() != null) {
+                        // 服务器更新成功，同步到本地
+                        UserManager.updateNickname(this@EditProfileActivity, nickname)
+                        currentAvatarPath?.let {
+                            UserManager.updateAvatar(this@EditProfileActivity, it)
+                        }
+                        
+                        Toast.makeText(this@EditProfileActivity, "个人资料已保存", Toast.LENGTH_SHORT).show()
+                        setResult(Activity.RESULT_OK)
+                        finish()
+                    } else {
+                        // 服务器更新失败
+                        Toast.makeText(this@EditProfileActivity, "保存失败，请重试", Toast.LENGTH_SHORT).show()
+                        btnSave.isEnabled = true
+                        btnSave.text = "保存"
+                    }
+                } else {
+                    // 未登录，仅保存到本地
+                    UserManager.updateNickname(this@EditProfileActivity, nickname)
+                    currentAvatarPath?.let {
+                        UserManager.updateAvatar(this@EditProfileActivity, it)
+                    }
+                    Toast.makeText(this@EditProfileActivity, "个人资料已保存（仅本地）", Toast.LENGTH_SHORT).show()
+                    setResult(Activity.RESULT_OK)
+                    finish()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("EditProfileActivity", "保存资料失败", e)
+                Toast.makeText(this@EditProfileActivity, "保存失败: ${e.message}", Toast.LENGTH_LONG).show()
+                btnSave.isEnabled = true
+                btnSave.text = "保存"
+            }
         }
-
-        Toast.makeText(this, "个人资料已保存", Toast.LENGTH_SHORT).show()
-        setResult(Activity.RESULT_OK)
-        finish()
     }
 }

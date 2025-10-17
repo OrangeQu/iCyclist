@@ -65,6 +65,23 @@ object UserManager {
         }
     }
     
+    /**
+     * 设置登录状态（登录成功后调用）
+     */
+    fun setLoggedIn(context: Context, email: String, nickname: String? = null) {
+        getPreferences(context).edit()
+            .putBoolean(KEY_IS_LOGGED_IN, true)
+            .putString(KEY_CURRENT_USER_EMAIL, email)
+            .apply()
+        
+        // 如果提供了昵称，也保存
+        nickname?.let {
+            getPreferences(context).edit()
+                .putString("$KEY_NICKNAME_PREFIX$email", it)
+                .apply()
+        }
+    }
+    
     fun logout(context: Context) {
         getPreferences(context).edit()
             .putBoolean(KEY_IS_LOGGED_IN, false)

@@ -9,5 +9,9 @@ data class ForumReply(
     val content: String = "",
     val createdAt: String? = null,
     val user: User? = null
-)
+) {
+    // 辅助属性，方便访问
+    val authorName: String get() = user?.nickname ?: user?.username ?: "匿名"
+    val authorAvatar: String get() = user?.avatar ?: ""
+}
 

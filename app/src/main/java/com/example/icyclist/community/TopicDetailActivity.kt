@@ -68,24 +68,81 @@ class TopicDetailActivity : AppCompatActivity() {
     }
 
     /**
-     * 从本地数据库加载主题详情
+     * 从服务器加载主题详情（带本地缓存）
      */
     private fun loadTopicFromDatabase(topicId: Int) {
         lifecycleScope.launch {
             try {
-                // 加载主题信息
+                // 从服务器获取主题详情
+                val apiService = RetrofitClient.getApiService(this@TopicDetailActivity)
+                val response = apiService.getTopicDetails(topicId.toLong())
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val networkTopic = response.body()!!
+                    
+                    // 更新主题信息
+                    binding.topicTitle.text = networkTopic.title
+                    binding.authorName.text = networkTopic.authorName
+                    binding.topicBody.text = networkTopic.content
+                    
+                    // 加载回复列表
+                    replies.clear()
+                    networkTopic.replies?.let { replyList ->
+                        replies.addAll(replyList.map { netReply ->
+                            Reply(
+                                id = netReply.id?.toInt() ?: 0,
+                                authorName = netReply.authorName,
+                                content = netReply.content
+                            )
+                        })
+                    }
+                    replyAdapter?.notifyDataSetChanged()
+                    
+                    // 保存到本地缓存
+                    withContext(Dispatchers.IO) {
+                        val topicEntity = com.example.icyclist.database.ForumTopicEntity(
+                            id = networkTopic.id?.toInt() ?: topicId,
+                            categoryId = networkTopic.categoryId.toInt(),
+                            userId = networkTopic.userId.toString(),
+                            userNickname = networkTopic.authorName,
+                            userAvatar = networkTopic.authorAvatar,
+                            title = networkTopic.title,
+                            content = networkTopic.content,
+                            timestamp = System.currentTimeMillis(),
+                            replyCount = networkTopic.replyCount
+                        )
+                        sportDatabase.forumTopicDao().insertTopic(topicEntity)
+                    }
+                    
+                    android.util.Log.d("TopicDetailActivity", "✅ 从服务器加载主题详情成功")
+                } else {
+                    // 服务器请求失败，从本地缓存加载
+                    loadFromLocalCache(topicId)
+                }
+            } catch (e: Exception) {
+                // 网络错误，从本地缓存加载
+                android.util.Log.e("TopicDetailActivity", "网络错误: ${e.message}", e)
+                loadFromLocalCache(topicId)
+            }
+        }
+    }
+    
+    /**
+     * 从本地缓存加载（作为后备方案）
+     */
+    private fun loadFromLocalCache(topicId: Int) {
+        lifecycleScope.launch {
+            try {
                 val topic = withContext(Dispatchers.IO) {
                     sportDatabase.forumTopicDao().getTopicById(topicId)
                 }
                 
                 if (topic != null) {
-                    // 更新主题信息
                     binding.topicTitle.text = topic.title
                     binding.authorName.text = topic.userNickname
                     binding.topicBody.text = topic.content
                     
-                    // 加载回复列表
-                    loadReplies(topicId)
+                    loadRepliesFromCache(topicId)
                 } else {
                     Toast.makeText(this@TopicDetailActivity, "主题不存在", Toast.LENGTH_SHORT).show()
                     finish()
@@ -97,16 +154,15 @@ class TopicDetailActivity : AppCompatActivity() {
     }
     
     /**
-     * 加载回复列表
+     * 从本地缓存加载回复列表
      */
-    private fun loadReplies(topicId: Int) {
+    private fun loadRepliesFromCache(topicId: Int) {
         lifecycleScope.launch {
             try {
                 val dbReplies = withContext(Dispatchers.IO) {
                     sportDatabase.forumReplyDao().getRepliesByTopicId(topicId)
                 }
                 
-                // 转换为Adapter需要的格式
                 replies.clear()
                 replies.addAll(dbReplies.map { dbReply ->
                     Reply(
@@ -117,7 +173,7 @@ class TopicDetailActivity : AppCompatActivity() {
                 })
                 
                 replyAdapter?.notifyDataSetChanged()
-                
+                android.util.Log.d("TopicDetailActivity", "从本地缓存加载 ${replies.size} 条回复")
             } catch (e: Exception) {
                 Toast.makeText(this@TopicDetailActivity, "加载回复失败: ${e.message}", Toast.LENGTH_SHORT).show()
             }
@@ -165,7 +221,7 @@ class TopicDetailActivity : AppCompatActivity() {
                         Toast.makeText(this@TopicDetailActivity, "回复成功", Toast.LENGTH_SHORT).show()
                         
                         // 重新加载回复列表
-                        loadReplies(topicId)
+                        loadRepliesFromCache(topicId)
                         
                     } catch (e: Exception) {
                         Toast.makeText(this@TopicDetailActivity, "回复失败: ${e.message}", Toast.LENGTH_SHORT).show()

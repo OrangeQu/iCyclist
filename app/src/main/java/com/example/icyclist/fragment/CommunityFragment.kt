@@ -51,21 +51,70 @@ class CommunityFragment : Fragment() {
     }
 
     /**
-     * 从本地数据库加载论坛分类数据
+     * 从服务器加载论坛分类数据（带本地缓存）
      */
     private fun loadForumCategories() {
-        android.util.Log.d("CommunityFragment", "📱 从本地数据库加载论坛分类...")
+        android.util.Log.d("CommunityFragment", "🌐 从服务器加载论坛分类...")
+        lifecycleScope.launch {
+            try {
+                // 先从服务器获取数据
+                val apiService = RetrofitClient.getApiService(requireContext())
+                val response = apiService.getForumCategories()
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val networkCategories = response.body()!!
+                    
+                    // 转换为 Adapter 需要的格式
+                    val categories = networkCategories.map { netCategory ->
+                        ForumCategory(
+                            id = netCategory.id?.toInt() ?: 0,
+                            name = netCategory.name,
+                            description = netCategory.description ?: "",
+                            postCount = netCategory.topicCount
+                        )
+                    }
+                    
+                    // 更新 UI
+                    binding.categoriesRecyclerView.adapter = ForumCategoryAdapter(categories)
+                    
+                    // 可选：保存到本地数据库作为缓存
+                    withContext(Dispatchers.IO) {
+                        networkCategories.forEach { netCategory ->
+                            val entity = com.example.icyclist.database.ForumCategoryEntity(
+                                id = netCategory.id?.toInt() ?: 0,
+                                name = netCategory.name,
+                                description = netCategory.description ?: "",
+                                topicCount = netCategory.topicCount
+                            )
+                            sportDatabase.forumCategoryDao().insertCategory(entity)
+                        }
+                    }
+                    
+                    android.util.Log.d("CommunityFragment", "✅ 从服务器加载成功！共 ${categories.size} 个分类")
+                } else {
+                    // 服务器请求失败，从本地数据库加载
+                    android.util.Log.w("CommunityFragment", "服务器请求失败，从本地缓存加载")
+                    loadFromLocalCache()
+                }
+            } catch (e: Exception) {
+                // 网络错误，从本地数据库加载
+                android.util.Log.e("CommunityFragment", "网络错误，从本地缓存加载: ${e.message}", e)
+                loadFromLocalCache()
+            }
+        }
+    }
+    
+    /**
+     * 从本地缓存加载数据（作为后备方案）
+     */
+    private fun loadFromLocalCache() {
         lifecycleScope.launch {
             try {
                 val dbCategories = withContext(Dispatchers.IO) {
                     sportDatabase.forumCategoryDao().getAllCategories()
                 }
                 
-                android.util.Log.d("CommunityFragment", "✅ 加载成功！共 ${dbCategories.size} 个分类")
-                
-                // 将数据库数据转换为 Adapter 需要的格式，使用真实的主题计数
                 val categories = dbCategories.map { dbCategory ->
-                    // 动态计算实际的主题数量
                     val actualTopicCount = withContext(Dispatchers.IO) {
                         sportDatabase.forumTopicDao().getTopicCountByCategory(dbCategory.id)
                     }
@@ -73,15 +122,14 @@ class CommunityFragment : Fragment() {
                         id = dbCategory.id,
                         name = dbCategory.name,
                         description = dbCategory.description,
-                        postCount = actualTopicCount // 使用真实的主题数量
+                        postCount = actualTopicCount
                     )
                 }
                 
-                // 更新 RecyclerView
                 binding.categoriesRecyclerView.adapter = ForumCategoryAdapter(categories)
-                
+                android.util.Log.d("CommunityFragment", "从本地缓存加载 ${categories.size} 个分类")
             } catch (e: Exception) {
-                android.util.Log.e("CommunityFragment", "❌ 加载失败: ${e.message}", e)
+                android.util.Log.e("CommunityFragment", "加载失败: ${e.message}", e)
                 Toast.makeText(requireContext(), "加载失败: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }

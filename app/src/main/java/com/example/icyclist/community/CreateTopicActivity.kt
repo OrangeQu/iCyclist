@@ -107,37 +107,55 @@ class CreateTopicActivity : AppCompatActivity() {
             return
         }
 
-        val currentUserId = UserManager.getCurrentUserEmail(this) ?: ""
-        val currentUserNickname = UserManager.getCurrentUserNickname(this) ?: "骑行者"
-        val currentUserAvatar = UserManager.getCurrentUserAvatar(this) ?: "ic_twotone_person_24"
+        // 禁用按钮，防止重复点击
+        binding.btnPublish.isEnabled = false
+        binding.btnPublish.text = "发布中..."
 
-        // 创建主题实体
-        val newTopic = ForumTopicEntity(
-            categoryId = categoryId,
-            userId = currentUserId,
-            userNickname = currentUserNickname,
-            userAvatar = currentUserAvatar,
-            title = title,
-            content = content
-        )
-
-        // 使用协程在后台线程插入数据库
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             try {
-                // 插入主题
-                sportDatabase.forumTopicDao().insertTopic(newTopic)
+                // 创建网络请求对象
+                val topicRequest = com.example.icyclist.network.model.forum.ForumTopic(
+                    categoryId = categoryId.toLong(),
+                    title = title,
+                    content = content
+                )
                 
-                // 更新分类的主题计数
-                sportDatabase.forumCategoryDao().incrementTopicCount(categoryId)
-
-                withContext(Dispatchers.Main) {
+                // 提交到服务器
+                val apiService = com.example.icyclist.network.RetrofitClient.getApiService(this@CreateTopicActivity)
+                val response = apiService.createTopic(topicRequest)
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val createdTopic = response.body()!!
+                    
+                    // 同时保存到本地缓存
+                    withContext(Dispatchers.IO) {
+                        val topicEntity = ForumTopicEntity(
+                            id = createdTopic.id?.toInt() ?: 0,
+                            categoryId = categoryId,
+                            userId = createdTopic.userId.toString(),
+                            userNickname = createdTopic.authorName,
+                            userAvatar = createdTopic.authorAvatar,
+                            title = createdTopic.title,
+                            content = createdTopic.content,
+                            timestamp = System.currentTimeMillis(),
+                            replyCount = 0
+                        )
+                        sportDatabase.forumTopicDao().insertTopic(topicEntity)
+                        sportDatabase.forumCategoryDao().incrementTopicCount(categoryId)
+                    }
+                    
                     Toast.makeText(this@CreateTopicActivity, "发布成功", Toast.LENGTH_SHORT).show()
                     finish()
+                } else {
+                    Toast.makeText(this@CreateTopicActivity, "发布失败: ${response.code()}", Toast.LENGTH_LONG).show()
+                    binding.btnPublish.isEnabled = true
+                    binding.btnPublish.text = "发布"
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@CreateTopicActivity, "发布失败: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+                android.util.Log.e("CreateTopicActivity", "发布失败", e)
+                Toast.makeText(this@CreateTopicActivity, "发布失败: ${e.message}", Toast.LENGTH_LONG).show()
+                binding.btnPublish.isEnabled = true
+                binding.btnPublish.text = "发布"
             }
         }
     }

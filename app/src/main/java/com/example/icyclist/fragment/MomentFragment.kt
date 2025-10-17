@@ -150,9 +150,53 @@ class MomentFragment : Fragment() {
     }
 
     /**
-     * 从本地数据库加载帖子（作为后备方案）
+     * 从服务器加载帖子列表（带本地缓存）
      */
     private fun loadPostsFromLocalDatabase() {
+        lifecycleScope.launch {
+            try {
+                // 先从服务器获取数据
+                val apiService = RetrofitClient.getApiService(requireContext())
+                val response = apiService.getTimelinePosts()
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val networkPosts = response.body()!!
+                    
+                    // 转换为本地实体格式
+                    val localPosts = networkPosts.map { networkPost ->
+                        convertNetworkPostToLocal(networkPost)
+                    }
+                    
+                    // 更新 UI
+                    posts.clear()
+                    posts.addAll(localPosts)
+                    postAdapter?.notifyDataSetChanged()
+                    
+                    // 保存到本地缓存
+                    withContext(Dispatchers.IO) {
+                        localPosts.forEach { post ->
+                            sportDatabase.communityPostDao().insertPost(post)
+                        }
+                    }
+                    
+                    android.util.Log.d("MomentFragment", "✅ 从服务器加载 ${posts.size} 条帖子")
+                } else {
+                    // 服务器请求失败，从本地缓存加载
+                    android.util.Log.w("MomentFragment", "服务器请求失败，从本地缓存加载")
+                    loadFromLocalCache()
+                }
+            } catch (e: Exception) {
+                // 网络错误，从本地缓存加载
+                android.util.Log.e("MomentFragment", "网络错误: ${e.message}", e)
+                loadFromLocalCache()
+            }
+        }
+    }
+    
+    /**
+     * 从本地缓存加载（作为后备方案）
+     */
+    private fun loadFromLocalCache() {
         lifecycleScope.launch {
             try {
                 val localPosts = withContext(Dispatchers.IO) {
@@ -164,8 +208,6 @@ class MomentFragment : Fragment() {
                 
                 // 加载每个帖子的点赞和评论数据
                 val currentUserId = UserManager.getCurrentUserEmail(requireContext()) ?: ""
-                
-                // 使用副本避免并发修改异常
                 val postsCopy = posts.toList()
                 
                 postsCopy.forEach { post ->
@@ -184,6 +226,7 @@ class MomentFragment : Fragment() {
                 }
                 
                 postAdapter?.notifyDataSetChanged()
+                android.util.Log.d("MomentFragment", "从本地缓存加载 ${posts.size} 条帖子")
             } catch (e: Exception) {
                 android.util.Log.e("MomentFragment", "加载帖子失败", e)
                 withContext(Dispatchers.Main) {

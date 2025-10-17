@@ -12,12 +12,15 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.example.icyclist.EditProfileActivity
 import com.example.icyclist.LoginActivity
 import com.example.icyclist.R
 import com.example.icyclist.manager.UserManager
+import com.example.icyclist.network.RetrofitClient
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
+import kotlinx.coroutines.launch
 import java.io.File
 
 class ProfileFragment : Fragment() {
@@ -78,7 +81,57 @@ class ProfileFragment : Fragment() {
     }
     
     private fun loadUserData() {
-        // 显示当前登录用户的邮箱和昵称
+        lifecycleScope.launch {
+            try {
+                // 1. 优先从服务器获取
+                val userId = UserManager.getUserId(requireContext())
+                if (userId != null && userId > 0) {
+                    val apiService = RetrofitClient.getApiService(requireContext())
+                    val response = apiService.getUserProfile(userId)
+                    
+                    if (response.isSuccessful && response.body() != null) {
+                        val profile = response.body()!!
+                        
+                        // 显示服务器数据
+                        tvUserEmail?.text = profile.username
+                        tvUserName?.text = profile.nickname ?: "骑行者"
+                        
+                        // 同步到本地
+                        UserManager.setLoggedIn(
+                            requireContext(),
+                            profile.username,
+                            profile.nickname
+                        )
+                        
+                        // 加载头像（如果有）
+                        profile.avatar?.let { avatarPath ->
+                            if (avatarPath.isNotEmpty()) {
+                                val file = File(avatarPath)
+                                if (file.exists()) {
+                                    imgAvatar?.setImageURI(Uri.fromFile(file))
+                                }
+                            }
+                        }
+                        
+                        return@launch
+                    }
+                }
+                
+                // 2. 网络失败或未登录，使用本地缓存
+                loadFromLocalCache()
+                
+            } catch (e: Exception) {
+                android.util.Log.e("ProfileFragment", "从服务器加载用户信息失败: ${e.message}", e)
+                // 降级到本地缓存
+                loadFromLocalCache()
+            }
+        }
+    }
+    
+    /**
+     * 从本地缓存加载用户数据（后备方案）
+     */
+    private fun loadFromLocalCache() {
         val currentEmail = UserManager.getCurrentUserEmail(requireContext())
         val currentNickname = UserManager.getCurrentUserNickname(requireContext())
         val avatarPath = UserManager.getCurrentUserAvatar(requireContext())

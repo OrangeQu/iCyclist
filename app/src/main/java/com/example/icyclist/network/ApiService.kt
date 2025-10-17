@@ -1,7 +1,6 @@
 package com.example.icyclist.network
 
-import com.example.icyclist.network.model.Comment
-import com.example.icyclist.network.model.Post
+import com.example.icyclist.network.model.*
 import com.example.icyclist.network.model.forum.ForumCategory
 import com.example.icyclist.network.model.forum.ForumReply
 import com.example.icyclist.network.model.forum.ForumTopic
@@ -13,6 +12,22 @@ import retrofit2.http.*
  * 定义所有后端 API 接口
  */
 interface ApiService {
+
+    // ==================== 用户认证相关接口 ====================
+    
+    /**
+     * 用户登录
+     * POST /api/users/login
+     */
+    @POST("api/users/login")
+    suspend fun login(@Body loginRequest: LoginRequest): Response<LoginResponse>
+    
+    /**
+     * 用户注册
+     * POST /api/users/register
+     */
+    @POST("api/users/register")
+    suspend fun register(@Body registerRequest: RegisterRequest): Response<User>
 
     // ==================== 论坛相关接口 ====================
     
@@ -94,13 +109,46 @@ interface ApiService {
     @POST("api/posts/{id}/like")
     suspend fun toggleLike(@Path("id") postId: Long): Response<Map<String, Boolean>>
 
-    // ==================== 用户认证相关接口 ====================
-    // 注：如果后端有单独的用户登录注册接口，在此添加
-    // 例如：
-    // @POST("api/auth/login")
-    // suspend fun login(@Body loginRequest: LoginRequest): Response<LoginResponse>
-    // 
-    // @POST("api/auth/register")
-    // suspend fun register(@Body registerRequest: RegisterRequest): Response<RegisterResponse>
+    // ==================== 骑行记录相关接口 ====================
+    
+    /**
+     * 创建骑行记录
+     * POST /api/rides
+     */
+    @POST("api/rides")
+    suspend fun createRideRecord(@Body rideRecord: RideRecord): Response<RideRecord>
+    
+    /**
+     * 获取用户的骑行记录列表
+     * GET /api/rides/user/{userId}
+     */
+    @GET("api/rides/user/{userId}")
+    suspend fun getUserRideRecords(@Path("userId") userId: Long): Response<List<RideRecord>>
+    
+    /**
+     * 根据ID获取骑行记录详情
+     * GET /api/rides/{id}
+     */
+    @GET("api/rides/{id}")
+    suspend fun getRideRecordById(@Path("id") id: Long): Response<RideRecord>
+    
+    // ==================== 用户资料相关接口 ====================
+    
+    /**
+     * 获取用户资料
+     * GET /api/users/profile/{userId}
+     */
+    @GET("api/users/profile/{userId}")
+    suspend fun getUserProfile(@Path("userId") userId: Long): Response<ProfileResponse>
+    
+    /**
+     * 更新用户资料
+     * PUT /api/users/profile/{userId}
+     */
+    @PUT("api/users/profile/{userId}")
+    suspend fun updateUserProfile(
+        @Path("userId") userId: Long,
+        @Body profileRequest: ProfileRequest
+    ): Response<ProfileResponse>
 }
 

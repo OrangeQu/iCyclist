@@ -6,10 +6,14 @@ import android.util.Patterns
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.example.icyclist.manager.UserManager
+import com.example.icyclist.network.RetrofitClient
+import com.example.icyclist.network.model.RegisterRequest
+import kotlinx.coroutines.launch
 
 class RegisterActivity : AppCompatActivity() {
 
@@ -117,14 +121,48 @@ class RegisterActivity : AppCompatActivity() {
         val nickname = etNickname.text?.toString()?.trim().orEmpty()
         val password = etPassword.text?.toString().orEmpty()
 
-        val success = UserManager.register(this, email, password, nickname)
-        
-        if (success) {
-            Toast.makeText(this, "注册成功，请登录", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
-        } else {
-            tilEmail.error = "该邮箱已被注册"
+        // 禁用按钮，防止重复点击
+        btnRegister.isEnabled = false
+        btnRegister.text = "注册中..."
+
+        lifecycleScope.launch {
+            try {
+                // 调用后端注册 API
+                val apiService = RetrofitClient.getApiService(this@RegisterActivity)
+                val registerRequest = RegisterRequest(email, password, nickname)
+                
+                android.util.Log.d("RegisterActivity", "📤 发送注册请求: $registerRequest")
+                val response = apiService.register(registerRequest)
+                
+                android.util.Log.d("RegisterActivity", "📥 收到响应: code=${response.code()}, isSuccessful=${response.isSuccessful}")
+                android.util.Log.d("RegisterActivity", "📥 响应body: ${response.body()}")
+                android.util.Log.d("RegisterActivity", "📥 错误body: ${response.errorBody()?.string()}")
+
+                if (response.isSuccessful && response.body() != null) {
+                    // 注册成功
+                    android.util.Log.d("RegisterActivity", "✅ 注册成功")
+                    Toast.makeText(this@RegisterActivity, "注册成功，请登录", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this@RegisterActivity, LoginActivity::class.java))
+                    finish()
+                } else {
+                    // 注册失败（如邮箱已存在）
+                    android.util.Log.e("RegisterActivity", "❌ 注册失败: code=${response.code()}")
+                    val errorMessage = when (response.code()) {
+                        400 -> "该邮箱已被注册"
+                        else -> "注册失败(${response.code()})，请稍后重试"
+                    }
+                    tilEmail.error = errorMessage
+                    Toast.makeText(this@RegisterActivity, errorMessage, Toast.LENGTH_LONG).show()
+                    btnRegister.isEnabled = true
+                    btnRegister.text = "注册"
+                }
+            } catch (e: Exception) {
+                // 网络错误
+                android.util.Log.e("RegisterActivity", "💥 异常: ${e.javaClass.simpleName}: ${e.message}", e)
+                Toast.makeText(this@RegisterActivity, "网络错误: ${e.message}", Toast.LENGTH_LONG).show()
+                btnRegister.isEnabled = true
+                btnRegister.text = "注册"
+            }
         }
     }
 }

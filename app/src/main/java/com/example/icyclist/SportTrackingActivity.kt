@@ -472,10 +472,13 @@ class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, Locatio
                     calories = calories
                 )
                 
-                // 保存到数据库
-                withContext(Dispatchers.IO) {
+                // 保存到本地数据库
+                val recordId = withContext(Dispatchers.IO) {
                     sportDatabase.sportRecordDao().insertRecord(entity)
                 }
+                
+                // 同时上传到服务器
+                uploadRecordToServer(entity, recordId.toInt())
                 
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@SportTrackingActivity, "运动记录已保存", Toast.LENGTH_SHORT).show()
@@ -509,6 +512,53 @@ class SportTrackingActivity : AppCompatActivity(), AMapLocationListener, Locatio
         val c = 2 * atan2(sqrt(a), sqrt(1 - a))
         
         return earthRadius * c
+    }
+    
+    /**
+     * 上传骑行记录到服务器
+     */
+    private fun uploadRecordToServer(entity: SportRecordEntity, recordId: Int) {
+        lifecycleScope.launch {
+            try {
+                // 将轨迹点转换为服务器格式
+                val trackPoints = currentRoutePoints.map { point ->
+                    com.example.icyclist.network.model.TrackPoint(
+                        latitude = point.latitude,
+                        longitude = point.longitude,
+                        timestamp = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+                            .format(java.util.Date()),
+                        speed = null,
+                        altitude = null
+                    )
+                }
+                
+                // 创建骑行记录请求对象
+                val rideRecord = com.example.icyclist.network.model.RideRecord(
+                    startTime = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+                        .format(java.util.Date(entity.startTime)),
+                    endTime = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+                        .format(java.util.Date(entity.endTime)),
+                    durationSeconds = ((entity.endTime - entity.startTime) / 1000).toInt(),
+                    distanceMeters = entity.totalDistanceMeters,
+                    averageSpeedKmh = entity.avgSpeed.replace(" km/h", "").toDoubleOrNull() ?: 0.0,
+                    trackPoints = trackPoints,
+                    title = "骑行记录 - ${entity.dateTime}"
+                )
+                
+                // 上传到服务器
+                val apiService = com.example.icyclist.network.RetrofitClient.getApiService(this@SportTrackingActivity)
+                val response = apiService.createRideRecord(rideRecord)
+                
+                if (response.isSuccessful) {
+                    android.util.Log.d("SportTrackingActivity", "✅ 骑行记录已上传到服务器")
+                } else {
+                    android.util.Log.w("SportTrackingActivity", "⚠️ 上传失败，但本地已保存: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                // 上传失败不影响本地保存，只记录日志
+                android.util.Log.e("SportTrackingActivity", "⚠️ 上传到服务器失败（本地已保存）: ${e.message}", e)
+            }
+        }
     }
     
     private fun formatDuration(millis: Long): String {

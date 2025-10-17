@@ -92,25 +92,64 @@ class PostDetailActivity : AppCompatActivity() {
     }
 
     /**
-     * 加载帖子详情
+     * 从服务器加载帖子详情（带本地缓存）
      */
     private fun loadPostDetail(postId: Int) {
         lifecycleScope.launch {
             try {
-                // 加载帖子信息
+                // 从服务器获取帖子详情
+                val apiService = com.example.icyclist.network.RetrofitClient.getApiService(this@PostDetailActivity)
+                val response = apiService.getPostById(postId.toLong())
+
+                if (response.isSuccessful && response.body() != null) {
+                    val networkPost = response.body()!!
+                    
+                    // 转换为本地实体
+                    post = CommunityPostEntity(
+                        id = networkPost.id?.toInt() ?: postId,
+                        userNickname = networkPost.authorName,
+                        userAvatar = networkPost.authorAvatar,
+                        content = networkPost.content ?: "",
+                        imageUrl = networkPost.imageUrls?.firstOrNull(),
+                        timestamp = System.currentTimeMillis(),
+                        likes = networkPost.likeCount,
+                        comments = networkPost.commentCount
+                    )
+                    
+                    // 显示帖子内容
+                    displayPost(post!!)
+                    
+                    // 加载点赞和评论状态
+                    loadLikeState(post!!.id)
+                    loadComments(post!!.id)
+                    
+                    android.util.Log.d("PostDetailActivity", "✅ 从服务器加载帖子详情")
+                } else {
+                    // 服务器请求失败，从本地缓存加载
+                    loadFromLocalCache(postId)
+                }
+            } catch (e: Exception) {
+                // 网络错误，从本地缓存加载
+                android.util.Log.e("PostDetailActivity", "网络错误: ${e.message}", e)
+                loadFromLocalCache(postId)
+            }
+        }
+    }
+    
+    /**
+     * 从本地缓存加载（作为后备方案）
+     */
+    private fun loadFromLocalCache(postId: Int) {
+        lifecycleScope.launch {
+            try {
                 post = withContext(Dispatchers.IO) {
                     sportDatabase.communityPostDao().getAllPosts()
                         .find { it.id == postId }
                 }
 
                 post?.let { currentPost ->
-                    // 显示帖子内容
                     displayPost(currentPost)
-
-                    // 加载点赞状态
                     loadLikeState(currentPost.id)
-
-                    // 加载评论列表
                     loadComments(currentPost.id)
                 } ?: run {
                     Toast.makeText(this@PostDetailActivity, "帖子不存在", Toast.LENGTH_SHORT).show()
@@ -204,76 +243,91 @@ class PostDetailActivity : AppCompatActivity() {
     }
 
     /**
-     * 处理点赞/取消点赞
+     * 处理点赞/取消点赞 - 调用服务器API
      */
     private fun handleLike(post: CommunityPostEntity) {
         lifecycleScope.launch {
             try {
-                val currentUserId = UserManager.getCurrentUserEmail(this@PostDetailActivity) ?: ""
+                // 调用服务器API
+                val apiService = com.example.icyclist.network.RetrofitClient.getApiService(this@PostDetailActivity)
+                val response = apiService.toggleLike(post.id.toLong())
 
-                val isLiked = withContext(Dispatchers.IO) {
-                    sportDatabase.likeDao().isLiked(post.id, currentUserId)
-                }
-
-                if (isLiked) {
-                    // 取消点赞
+                if (response.isSuccessful && response.body() != null) {
+                    val result = response.body()!!
+                    val isLiked = result["liked"] ?: false
+                    
+                    // 同时更新本地缓存
+                    val currentUserId = UserManager.getCurrentUserEmail(this@PostDetailActivity) ?: ""
                     withContext(Dispatchers.IO) {
-                        sportDatabase.likeDao().deleteLike(post.id, currentUserId)
+                        if (isLiked) {
+                            val like = LikeEntity(postId = post.id, userId = currentUserId)
+                            sportDatabase.likeDao().insertLike(like)
+                        } else {
+                            sportDatabase.likeDao().deleteLike(post.id, currentUserId)
+                        }
                     }
+                    
+                    // 更新UI
+                    loadLikeState(post.id)
+                    
+                    android.util.Log.d("PostDetailActivity", "点赞操作成功: $isLiked")
                 } else {
-                    // 点赞
-                    val like = LikeEntity(
-                        postId = post.id,
-                        userId = currentUserId
-                    )
-                    withContext(Dispatchers.IO) {
-                        sportDatabase.likeDao().insertLike(like)
-                    }
+                    Toast.makeText(this@PostDetailActivity, "操作失败", Toast.LENGTH_SHORT).show()
                 }
-
-                // 更新UI
-                loadLikeState(post.id)
-
             } catch (e: Exception) {
+                android.util.Log.e("PostDetailActivity", "点赞失败", e)
                 Toast.makeText(this@PostDetailActivity, "操作失败: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     /**
-     * 发送评论
+     * 发送评论 - 调用服务器API
      */
     private fun sendComment(postId: Int, content: String) {
         lifecycleScope.launch {
             try {
-                val currentUserId = UserManager.getCurrentUserEmail(this@PostDetailActivity) ?: ""
-                val currentUserNickname = UserManager.getCurrentUserNickname(this@PostDetailActivity) ?: "骑行者"
-                val currentUserAvatar = UserManager.getCurrentUserAvatar(this@PostDetailActivity) ?: "ic_twotone_person_24"
-
-                val comment = CommentEntity(
-                    postId = postId,
-                    userId = currentUserId,
-                    userNickname = currentUserNickname,
-                    userAvatar = currentUserAvatar,
+                // 创建评论请求对象
+                val commentRequest = com.example.icyclist.network.model.Comment(
+                    postId = postId.toLong(),
                     content = content
                 )
+                
+                // 调用服务器API
+                val apiService = com.example.icyclist.network.RetrofitClient.getApiService(this@PostDetailActivity)
+                val response = apiService.addComment(postId.toLong(), commentRequest)
 
-                withContext(Dispatchers.IO) {
-                    sportDatabase.commentDao().insertComment(comment)
+                if (response.isSuccessful && response.body() != null) {
+                    val createdComment = response.body()!!
+                    
+                    // 同时保存到本地缓存
+                    withContext(Dispatchers.IO) {
+                        val commentEntity = CommentEntity(
+                            id = createdComment.id?.toInt() ?: 0,
+                            postId = postId,
+                            userId = createdComment.userId.toString(),
+                            userNickname = createdComment.user?.nickname ?: "骑行者",
+                            userAvatar = createdComment.user?.avatar ?: "",
+                            content = createdComment.content ?: "",
+                            timestamp = System.currentTimeMillis()
+                        )
+                        sportDatabase.commentDao().insertComment(commentEntity)
+                    }
+                    
+                    // 清空输入框
+                    binding.etCommentInput.text.clear()
+                    binding.etCommentInput.clearFocus()
+                    
+                    // 重新加载评论列表
+                    loadComments(postId)
+                    
+                    Toast.makeText(this@PostDetailActivity, "评论成功", Toast.LENGTH_SHORT).show()
+                    android.util.Log.d("PostDetailActivity", "评论发送成功")
+                } else {
+                    Toast.makeText(this@PostDetailActivity, "评论失败", Toast.LENGTH_SHORT).show()
                 }
-
-                // 清空输入框
-                binding.etCommentInput.text.clear()
-
-                // 隐藏键盘
-                binding.etCommentInput.clearFocus()
-
-                // 重新加载评论列表
-                loadComments(postId)
-
-                Toast.makeText(this@PostDetailActivity, "评论成功", Toast.LENGTH_SHORT).show()
-
             } catch (e: Exception) {
+                android.util.Log.e("PostDetailActivity", "评论失败", e)
                 Toast.makeText(this@PostDetailActivity, "评论失败: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }

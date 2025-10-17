@@ -74,16 +74,72 @@ class TopicListActivity : AppCompatActivity() {
     }
 
     /**
-     * 从本地数据库加载主题列表
+     * 从服务器加载主题列表（带本地缓存）
      */
     private fun loadTopicsFromDatabase(categoryId: Int) {
+        lifecycleScope.launch {
+            try {
+                // 先从服务器获取数据
+                val apiService = RetrofitClient.getApiService(this@TopicListActivity)
+                val response = apiService.getTopicsByCategory(categoryId.toLong())
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val networkTopics = response.body()!!
+                    
+                    // 转换为 Adapter 需要的格式
+                    val topics = networkTopics.map { netTopic ->
+                        Topic(
+                            id = netTopic.id?.toInt() ?: 0,
+                            title = netTopic.title,
+                            authorName = netTopic.authorName ?: "匿名",
+                            replyCount = netTopic.replyCount ?: 0
+                        )
+                    }
+                    
+                    // 更新 RecyclerView
+                    binding.topicsRecyclerView.adapter = TopicAdapter(topics)
+                    
+                    // 保存到本地缓存
+                    withContext(Dispatchers.IO) {
+                        networkTopics.forEach { netTopic ->
+                            val entity = com.example.icyclist.database.ForumTopicEntity(
+                                id = netTopic.id?.toInt() ?: 0,
+                                categoryId = categoryId,
+                                userId = netTopic.authorId.toString(),
+                                userNickname = netTopic.authorName,
+                                userAvatar = netTopic.authorAvatar,
+                                title = netTopic.title,
+                                content = netTopic.content,
+                                timestamp = System.currentTimeMillis(),
+                                replyCount = netTopic.replyCount
+                            )
+                            sportDatabase.forumTopicDao().insertTopic(entity)
+                        }
+                    }
+                    
+                    android.util.Log.d("TopicListActivity", "✅ 从服务器加载 ${topics.size} 个主题")
+                } else {
+                    // 服务器请求失败，从本地缓存加载
+                    loadFromLocalCache(categoryId)
+                }
+            } catch (e: Exception) {
+                // 网络错误，从本地缓存加载
+                android.util.Log.e("TopicListActivity", "网络错误: ${e.message}", e)
+                loadFromLocalCache(categoryId)
+            }
+        }
+    }
+    
+    /**
+     * 从本地缓存加载（作为后备方案）
+     */
+    private fun loadFromLocalCache(categoryId: Int) {
         lifecycleScope.launch {
             try {
                 val dbTopics = withContext(Dispatchers.IO) {
                     sportDatabase.forumTopicDao().getTopicsByCategory(categoryId)
                 }
                 
-                // 将数据库数据转换为 Adapter 需要的格式
                 val topics = dbTopics.map { dbTopic ->
                     Topic(
                         id = dbTopic.id,
@@ -93,9 +149,8 @@ class TopicListActivity : AppCompatActivity() {
                     )
                 }
                 
-                // 更新 RecyclerView
                 binding.topicsRecyclerView.adapter = TopicAdapter(topics)
-                
+                android.util.Log.d("TopicListActivity", "从本地缓存加载 ${topics.size} 个主题")
             } catch (e: Exception) {
                 Toast.makeText(this@TopicListActivity, "加载失败: ${e.message}", Toast.LENGTH_SHORT).show()
             }

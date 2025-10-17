@@ -18,11 +18,34 @@
         FROM user
         WHERE username = #{username}
     </select>
+    
+    <select id="findById" resultType="com.icyclist.server.model.User">
+        SELECT
+            id,
+            username,
+            password as passwordHash,
+            nickname,
+            avatar,
+            gender,
+            bio,
+            created_at as createdAt,
+            updated_at as updatedAt
+        FROM user
+        WHERE id = #{id}
+    </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO user (username, password, nickname, avatar, gender, bio)
         VALUES (#{username}, #{passwordHash}, #{nickname}, #{avatar}, #{gender}, #{bio})
     </insert>
+    
+    <update id="updateProfile">
+        UPDATE user
+        SET nickname = #{nickname},
+            avatar = #{avatar},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
 
 </mapper>
 

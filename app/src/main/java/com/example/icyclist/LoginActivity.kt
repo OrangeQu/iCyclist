@@ -6,10 +6,14 @@ import android.util.Patterns
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.example.icyclist.manager.UserManager
+import com.example.icyclist.network.RetrofitClient
+import com.example.icyclist.network.model.LoginRequest
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
 
@@ -86,14 +90,47 @@ class LoginActivity : AppCompatActivity() {
         val email = etEmail.text?.toString()?.trim().orEmpty()
         val password = etPassword.text?.toString().orEmpty()
 
-        val success = UserManager.login(this, email, password)
-        
-        if (success) {
-            Toast.makeText(this, "登录成功", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, MainContainerActivity::class.java))
-            finish()
-        } else {
-            tilPassword.error = "邮箱或密码错误"
+        // 禁用按钮，防止重复点击
+        btnLogin.isEnabled = false
+        btnLogin.text = "登录中..."
+
+        lifecycleScope.launch {
+            try {
+                // 调用后端登录 API
+                val apiService = RetrofitClient.getApiService(this@LoginActivity)
+                val loginRequest = LoginRequest(email, password)
+                val response = apiService.login(loginRequest)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val loginResponse = response.body()!!
+                    
+                    // 保存 JWT Token 和用户信息
+                    UserManager.saveAuthToken(this@LoginActivity, loginResponse.token)
+                    UserManager.saveUserId(this@LoginActivity, loginResponse.user?.id ?: 0)
+                    
+                    // 保存登录状态（使用UserManager统一管理）
+                    UserManager.setLoggedIn(
+                        this@LoginActivity, 
+                        email, 
+                        loginResponse.user?.nickname ?: email.substringBefore("@")
+                    )
+                    
+                    Toast.makeText(this@LoginActivity, "登录成功", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this@LoginActivity, MainContainerActivity::class.java))
+                    finish()
+                } else {
+                    // 登录失败
+                    tilPassword.error = "邮箱或密码错误"
+                    btnLogin.isEnabled = true
+                    btnLogin.text = "登录"
+                }
+            } catch (e: Exception) {
+                // 网络错误
+                android.util.Log.e("LoginActivity", "登录失败", e)
+                Toast.makeText(this@LoginActivity, "登录失败: ${e.message}", Toast.LENGTH_LONG).show()
+                btnLogin.isEnabled = true
+                btnLogin.text = "登录"
+            }
         }
     }
 }

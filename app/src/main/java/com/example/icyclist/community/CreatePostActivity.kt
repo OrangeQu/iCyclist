@@ -185,30 +185,52 @@ class CreatePostActivity : AppCompatActivity() {
             return
         }
 
-        val currentUser = UserManager.getCurrentUserNickname(this) ?: "骑行者"
-        val currentUserAvatar = UserManager.getCurrentUserAvatar(this) ?: "ic_twotone_person_24"
+        // 禁用按钮，防止重复点击
+        binding.btnPublish.isEnabled = false
+        binding.btnPublish.text = "发布中..."
 
-
-        // 创建帖子实体
-        val newPost = CommunityPostEntity(
-            userNickname = currentUser,
-            userAvatar = currentUserAvatar,
-            content = content,
-            imageUrl = savedImagePath
-        )
-
-        // 使用协程在后台线程插入数据库
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             try {
-                sportDatabase.communityPostDao().insertPost(newPost)
-                withContext(Dispatchers.Main) {
+                // 创建网络请求对象
+                val postRequest = com.example.icyclist.network.model.Post(
+                    content = content,
+                    mediaUrls = if (savedImagePath != null) listOf(savedImagePath!!) else emptyList()
+                )
+                
+                // 提交到服务器
+                val apiService = com.example.icyclist.network.RetrofitClient.getApiService(this@CreatePostActivity)
+                val response = apiService.createPost(postRequest)
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val createdPost = response.body()!!
+                    
+                    // 同时保存到本地缓存
+                    withContext(Dispatchers.IO) {
+                        val postEntity = CommunityPostEntity(
+                            id = createdPost.id?.toInt() ?: 0,
+                            userNickname = createdPost.authorName,
+                            userAvatar = createdPost.authorAvatar,
+                            content = createdPost.content ?: "",
+                            imageUrl = createdPost.imageUrls?.firstOrNull(),
+                            timestamp = System.currentTimeMillis(),
+                            likes = createdPost.likeCount,
+                            comments = createdPost.commentCount
+                        )
+                        sportDatabase.communityPostDao().insertPost(postEntity)
+                    }
+                    
                     Toast.makeText(this@CreatePostActivity, "发布成功", Toast.LENGTH_SHORT).show()
-                    finish() // 发布成功后关闭页面
+                    finish()
+                } else {
+                    Toast.makeText(this@CreatePostActivity, "发布失败: ${response.code()}", Toast.LENGTH_LONG).show()
+                    binding.btnPublish.isEnabled = true
+                    binding.btnPublish.text = "发布"
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@CreatePostActivity, "发布失败: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+                android.util.Log.e("CreatePostActivity", "发布失败", e)
+                Toast.makeText(this@CreatePostActivity, "发布失败: ${e.message}", Toast.LENGTH_LONG).show()
+                binding.btnPublish.isEnabled = true
+                binding.btnPublish.text = "发布"
             }
         }
     }

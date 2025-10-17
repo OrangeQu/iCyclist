@@ -36,6 +36,7 @@ import com.example.icyclist.adapter.SportRecordAdapter
 import com.example.icyclist.database.SportDatabase
 import com.example.icyclist.manager.UserManager
 import com.example.icyclist.utils.SportRecord
+import com.example.icyclist.network.RetrofitClient
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
@@ -460,33 +461,108 @@ class SportFragment : Fragment(), AMapLocationListener, LocationSource {
     private fun loadSportRecords() {
         lifecycleScope.launch {
             try {
-                val entities = withContext(Dispatchers.IO) {
-                    sportDatabase.sportRecordDao().getLatestRecords(3)
+                // 1. 优先从服务器获取
+                val userId = UserManager.getUserId(requireContext())
+                if (userId != null && userId > 0) {
+                    val apiService = RetrofitClient.getApiService(requireContext())
+                    val response = apiService.getUserRideRecords(userId)
+                    
+                    if (response.isSuccessful && response.body() != null) {
+                        val serverRecords = response.body()!!
+                        Log.d("SportFragment", "从服务器加载了 ${serverRecords.size} 条运动记录")
+                        
+                        // 转换为SportRecord并显示最新3条
+                        sportRecords.clear()
+                        sportRecords.addAll(serverRecords.take(3).map { rideRecord ->
+                            SportRecord(
+                                id = rideRecord.id ?: 0L,
+                                dateTime = rideRecord.startTime,
+                                duration = formatDuration((rideRecord.durationSeconds * 1000L)),
+                                distance = formatDistance(rideRecord.distanceMeters / 1000.0), // 米转公里
+                                avgSpeed = formatSpeed(rideRecord.averageSpeedKmh),
+                                maxSpeed = rideRecord.averageSpeedKmh, // 使用平均速度作为最大速度
+                                calories = ((rideRecord.distanceMeters / 1000.0) * 50).toInt(), // 估算卡路里
+                                trackThumbPath = null, // 服务器记录暂不支持缩略图
+                                startTime = System.currentTimeMillis(), // 使用当前时间作为占位
+                                endTime = System.currentTimeMillis(),
+                                totalDistanceMeters = rideRecord.distanceMeters
+                            )
+                        })
+                        
+                        (rvSportRecords?.adapter as? SportRecordAdapter)?.updateRecords(sportRecords)
+                        Log.d("SportFragment", "显示了 ${sportRecords.size} 条运动记录")
+                        return@launch
+                    }
                 }
                 
-                sportRecords.clear()
-                sportRecords.addAll(entities.map { entity ->
-                    SportRecord(
-                        id = entity.id,
-                        dateTime = entity.dateTime,
-                        duration = entity.duration,
-                        distance = entity.distance,
-                        avgSpeed = entity.avgSpeed,
-                        trackThumbPath = entity.trackThumbPath,
-                        startTime = entity.startTime,
-                        endTime = entity.endTime,
-                        totalDistanceMeters = entity.totalDistanceMeters,
-                        maxSpeed = entity.maxSpeed,
-                        calories = entity.calories
-                    )
-                })
-                
-                (rvSportRecords?.adapter as? SportRecordAdapter)?.updateRecords(sportRecords)
-                Log.d("SportFragment", "加载了 ${sportRecords.size} 条运动记录")
+                // 2. 网络失败或未登录，降级到本地缓存
+                Log.d("SportFragment", "从服务器加载失败，使用本地缓存")
+                loadFromLocalCache()
                 
             } catch (e: Exception) {
-                Log.e("SportFragment", "加载运动记录失败", e)
+                Log.e("SportFragment", "从服务器加载运动记录失败: ${e.message}", e)
+                // 降级到本地缓存
+                loadFromLocalCache()
             }
+        }
+    }
+    
+    /**
+     * 格式化时长 (秒 -> HH:mm:ss)
+     */
+    private fun formatDuration(durationMillis: Long): String {
+        val seconds = (durationMillis / 1000).toInt()
+        val hours = seconds / 3600
+        val minutes = (seconds % 3600) / 60
+        val secs = seconds % 60
+        return String.format("%02d:%02d:%02d", hours, minutes, secs)
+    }
+    
+    /**
+     * 格式化距离 (米 -> XX.XX km)
+     */
+    private fun formatDistance(distanceKm: Double): String {
+        return String.format("%.2f km", distanceKm)
+    }
+    
+    /**
+     * 格式化速度 (km/h -> XX.X km/h)
+     */
+    private fun formatSpeed(speed: Double): String {
+        return String.format("%.1f km/h", speed)
+    }
+    
+    /**
+     * 从本地缓存加载运动记录（后备方案）
+     */
+    private suspend fun loadFromLocalCache() {
+        try {
+            val entities = withContext(Dispatchers.IO) {
+                sportDatabase.sportRecordDao().getLatestRecords(3)
+            }
+            
+            sportRecords.clear()
+            sportRecords.addAll(entities.map { entity ->
+                SportRecord(
+                    id = entity.id,
+                    dateTime = entity.dateTime,
+                    duration = entity.duration,
+                    distance = entity.distance,
+                    avgSpeed = entity.avgSpeed,
+                    trackThumbPath = entity.trackThumbPath,
+                    startTime = entity.startTime,
+                    endTime = entity.endTime,
+                    totalDistanceMeters = entity.totalDistanceMeters,
+                    maxSpeed = entity.maxSpeed,
+                    calories = entity.calories
+                )
+            })
+            
+            (rvSportRecords?.adapter as? SportRecordAdapter)?.updateRecords(sportRecords)
+            Log.d("SportFragment", "从本地缓存加载了 ${sportRecords.size} 条运动记录")
+            
+        } catch (e: Exception) {
+            Log.e("SportFragment", "从本地缓存加载运动记录失败", e)
         }
     }
 
