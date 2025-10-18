@@ -94,8 +94,6 @@ cd iCyclist
 CREATE DATABASE icyclist CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-执行数据库初始化脚本（如有）。
-
 ### 3. 配置服务器
 
 编辑 `server/src/main/resources/application.properties`：
@@ -174,8 +172,6 @@ private const val BASE_URL = "http://your-server-ip:8080/"
 - `GET /api/forum/topics/{id}` - 获取主题详情
 - `POST /api/forum/topics` - 发布新主题
 - `POST /api/forum/topics/{id}/replies` - 发布回复
-
-详细API文档请参见 [API文档](docs/API.md)（如有）。
 
 ## 🎯 核心特性
 
