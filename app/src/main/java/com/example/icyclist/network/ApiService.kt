@@ -93,6 +93,13 @@ interface ApiService {
     suspend fun getPostById(@Path("id") id: Long): Response<Post>
 
     /**
+     * 获取帖子的评论列表
+     * GET /api/posts/{id}/comments
+     */
+    @GET("api/posts/{id}/comments")
+    suspend fun getPostComments(@Path("id") postId: Long): Response<List<Comment>>
+
+    /**
      * 给帖子添加评论
      * POST /api/posts/{id}/comments
      */
@@ -101,6 +108,13 @@ interface ApiService {
         @Path("id") postId: Long,
         @Body comment: Comment
     ): Response<Comment>
+
+    /**
+     * 获取帖子的点赞列表
+     * GET /api/posts/{id}/likes
+     */
+    @GET("api/posts/{id}/likes")
+    suspend fun getPostLikes(@Path("id") postId: Long): Response<List<PostLike>>
 
     /**
      * 切换帖子点赞状态

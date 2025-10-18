@@ -40,12 +40,19 @@ class PostService(
         return post
     }
 
+    fun getPostComments(postId: Long): List<Comment> {
+        return commentMapper.findByPostId(postId)
+    }
+
     fun createComment(comment: Comment, userId: Long): Comment {
         comment.userId = userId
         commentMapper.insert(comment)
-        // Here we don't refetch, assuming the client can handle it.
-        // Or we could create a findById in CommentMapper.
-        return comment
+        // Refetch to get user data populated
+        return commentMapper.findByPostId(comment.postId).lastOrNull() ?: comment
+    }
+
+    fun getPostLikes(postId: Long): List<PostLike> {
+        return postLikeMapper.findByPostId(postId)
     }
 
     fun toggleLike(postId: Long, userId: Long): Boolean {

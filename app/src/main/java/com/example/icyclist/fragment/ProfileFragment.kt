@@ -78,11 +78,17 @@ class ProfileFragment : Fragment() {
     
     override fun onResume() {
         super.onResume()
-        loadUserData()
+        // 仅在视图已创建时加载数据
+        if (view != null) {
+            loadUserData()
+        }
     }
     
     private fun loadUserData() {
-        lifecycleScope.launch {
+        // 检查Fragment是否处于有效状态
+        if (!isAdded || view == null) return
+        
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 // 1. 优先从服务器获取
                 val userId = UserManager.getUserId(requireContext())

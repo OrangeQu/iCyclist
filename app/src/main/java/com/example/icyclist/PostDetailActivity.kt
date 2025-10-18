@@ -216,28 +216,79 @@ class PostDetailActivity : AppCompatActivity() {
     }
 
     /**
-     * 加载评论列表
+     * 加载评论列表（从服务器）
      */
     private fun loadComments(postId: Int) {
         lifecycleScope.launch {
-            val commentList = withContext(Dispatchers.IO) {
-                sportDatabase.commentDao().getCommentsByPostId(postId)
-            }
+            try {
+                // 优先从服务器获取评论
+                val apiService = com.example.icyclist.network.RetrofitClient.getApiService(this@PostDetailActivity)
+                val response = apiService.getPostComments(postId.toLong())
+                
+                val commentList = if (response.isSuccessful && response.body() != null) {
+                    val serverComments = response.body()!!
+                    
+                    // 转换为本地实体并保存到本地缓存
+                    serverComments.map { serverComment ->
+                        val commentEntity = CommentEntity(
+                            id = serverComment.id?.toInt() ?: 0,
+                            postId = postId,
+                            userId = serverComment.userId.toString(),
+                            userNickname = serverComment.user?.nickname ?: "骑行者",
+                            userAvatar = serverComment.user?.avatar ?: "",
+                            content = serverComment.content ?: "",
+                            timestamp = System.currentTimeMillis()
+                        )
+                        
+                        // 保存到本地
+                        withContext(Dispatchers.IO) {
+                            sportDatabase.commentDao().insertComment(commentEntity)
+                        }
+                        
+                        commentEntity
+                    }
+                } else {
+                    // 服务器请求失败，从本地缓存加载
+                    withContext(Dispatchers.IO) {
+                        sportDatabase.commentDao().getCommentsByPostId(postId)
+                    }
+                }
 
-            comments.clear()
-            comments.addAll(commentList)
-            commentAdapter?.notifyDataSetChanged()
+                comments.clear()
+                comments.addAll(commentList)
+                commentAdapter?.notifyDataSetChanged()
 
-            // 更新评论数量显示
-            binding.tvCommentCount.text = "${commentList.size} 条评论"
+                // 更新评论数量显示
+                binding.tvCommentCount.text = "${commentList.size} 条评论"
 
-            // 显示/隐藏空状态提示
-            if (commentList.isEmpty()) {
-                binding.tvEmptyComments.visibility = View.VISIBLE
-                binding.recyclerViewComments.visibility = View.GONE
-            } else {
-                binding.tvEmptyComments.visibility = View.GONE
-                binding.recyclerViewComments.visibility = View.VISIBLE
+                // 显示/隐藏空状态提示
+                if (commentList.isEmpty()) {
+                    binding.tvEmptyComments.visibility = View.VISIBLE
+                    binding.recyclerViewComments.visibility = View.GONE
+                } else {
+                    binding.tvEmptyComments.visibility = View.GONE
+                    binding.recyclerViewComments.visibility = View.VISIBLE
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("PostDetailActivity", "加载评论失败: ${e.message}", e)
+                // 异常时从本地缓存加载
+                val commentList = withContext(Dispatchers.IO) {
+                    sportDatabase.commentDao().getCommentsByPostId(postId)
+                }
+                
+                comments.clear()
+                comments.addAll(commentList)
+                commentAdapter?.notifyDataSetChanged()
+                
+                binding.tvCommentCount.text = "${commentList.size} 条评论"
+                
+                if (commentList.isEmpty()) {
+                    binding.tvEmptyComments.visibility = View.VISIBLE
+                    binding.recyclerViewComments.visibility = View.GONE
+                } else {
+                    binding.tvEmptyComments.visibility = View.GONE
+                    binding.recyclerViewComments.visibility = View.VISIBLE
+                }
             }
         }
     }

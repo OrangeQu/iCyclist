@@ -98,8 +98,9 @@ class TopicDetailActivity : AppCompatActivity() {
                     }
                     replyAdapter?.notifyDataSetChanged()
                     
-                    // 保存到本地缓存
+                    // 保存到本地缓存（包括主题和回复）
                     withContext(Dispatchers.IO) {
+                        // 保存主题
                         val topicEntity = com.example.icyclist.database.ForumTopicEntity(
                             id = networkTopic.id?.toInt() ?: topicId,
                             categoryId = networkTopic.categoryId.toInt(),
@@ -112,6 +113,20 @@ class TopicDetailActivity : AppCompatActivity() {
                             replyCount = networkTopic.replyCount
                         )
                         sportDatabase.forumTopicDao().insertTopic(topicEntity)
+                        
+                        // 保存回复到本地数据库
+                        networkTopic.replies?.forEach { netReply ->
+                            val replyEntity = ForumReplyEntity(
+                                id = netReply.id?.toInt() ?: 0,
+                                topicId = topicId,
+                                userId = netReply.userId.toString(),
+                                userNickname = netReply.authorName,
+                                userAvatar = netReply.authorAvatar,
+                                content = netReply.content,
+                                timestamp = System.currentTimeMillis()
+                            )
+                            sportDatabase.forumReplyDao().insertReply(replyEntity)
+                        }
                     }
                     
                     android.util.Log.d("TopicDetailActivity", "✅ 从服务器加载主题详情成功")
@@ -205,6 +220,27 @@ class TopicDetailActivity : AppCompatActivity() {
                         val currentUserNickname = UserManager.getCurrentUserNickname(this@TopicDetailActivity) ?: "骑行者"
                         val currentUserAvatar = UserManager.getCurrentUserAvatar(this@TopicDetailActivity) ?: "ic_twotone_person_24"
                         
+                        // 先尝试发送到服务器
+                        var success = false
+                        try {
+                            val apiService = RetrofitClient.getApiService(this@TopicDetailActivity)
+                            val userId = UserManager.getUserId(this@TopicDetailActivity) ?: 0L
+                            val networkReply = com.example.icyclist.network.model.forum.ForumReply(
+                                topicId = topicId.toLong(),
+                                userId = userId,
+                                content = content
+                            )
+                            val response = apiService.createReply(topicId.toLong(), networkReply)
+                            
+                            if (response.isSuccessful && response.body() != null) {
+                                success = true
+                                android.util.Log.d("TopicDetailActivity", "✅ 回复已发送到服务器")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.w("TopicDetailActivity", "发送到服务器失败，仅保存到本地: ${e.message}")
+                        }
+                        
+                        // 保存到本地数据库（作为缓存或备用）
                         val reply = ForumReplyEntity(
                             topicId = topicId,
                             userId = currentUserId,
@@ -220,10 +256,11 @@ class TopicDetailActivity : AppCompatActivity() {
                         
                         Toast.makeText(this@TopicDetailActivity, "回复成功", Toast.LENGTH_SHORT).show()
                         
-                        // 重新加载回复列表
-                        loadRepliesFromCache(topicId)
+                        // 重新加载主题详情（包括回复）
+                        loadTopicFromDatabase(topicId)
                         
                     } catch (e: Exception) {
+                        android.util.Log.e("TopicDetailActivity", "回复失败", e)
                         Toast.makeText(this@TopicDetailActivity, "回复失败: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }

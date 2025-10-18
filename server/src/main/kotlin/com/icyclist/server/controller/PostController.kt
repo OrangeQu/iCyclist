@@ -29,6 +29,12 @@ class PostController(private val postService: PostService) {
         return post?.let { ResponseEntity.ok(it) } ?: ResponseEntity.notFound().build()
     }
 
+    @GetMapping("/{id}/comments")
+    fun getPostComments(@PathVariable id: Long): ResponseEntity<List<Comment>> {
+        val comments = postService.getPostComments(id)
+        return ResponseEntity.ok(comments)
+    }
+
     @PostMapping("/{id}/comments")
     fun addComment(
         @PathVariable id: Long,
@@ -38,6 +44,12 @@ class PostController(private val postService: PostService) {
         comment.postId = id
         val createdComment = postService.createComment(comment, userId)
         return ResponseEntity.ok(createdComment)
+    }
+
+    @GetMapping("/{id}/likes")
+    fun getPostLikes(@PathVariable id: Long): ResponseEntity<List<com.icyclist.server.model.PostLike>> {
+        val likes = postService.getPostLikes(id)
+        return ResponseEntity.ok(likes)
     }
 
     @PostMapping("/{id}/like")

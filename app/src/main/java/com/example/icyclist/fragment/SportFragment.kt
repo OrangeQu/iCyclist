@@ -459,7 +459,10 @@ class SportFragment : Fragment(), AMapLocationListener, LocationSource {
     }
     
     private fun loadSportRecords() {
-        lifecycleScope.launch {
+        // 检查Fragment是否处于有效状态
+        if (!isAdded || view == null) return
+        
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 // 1. 优先从服务器获取
                 val userId = UserManager.getUserId(requireContext())
@@ -567,7 +570,10 @@ class SportFragment : Fragment(), AMapLocationListener, LocationSource {
     }
 
     private fun shareSportRecord(record: SportRecord) {
-        lifecycleScope.launch {
+        // 检查Fragment是否处于有效状态
+        if (!isAdded || view == null) return
+        
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val userEmail = UserManager.getCurrentUserEmail(requireContext()) ?: "unknown"
                 val userNickname = UserManager.getCurrentUserNickname(requireContext()) ?: "骑行者"
@@ -607,7 +613,10 @@ class SportFragment : Fragment(), AMapLocationListener, LocationSource {
     }
 
     private fun deleteSportRecord(record: SportRecord) {
-        lifecycleScope.launch {
+        // 检查Fragment是否处于有效状态
+        if (!isAdded || view == null) return
+        
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 withContext(Dispatchers.IO) {
                     sportDatabase.sportRecordDao().deleteRecord(

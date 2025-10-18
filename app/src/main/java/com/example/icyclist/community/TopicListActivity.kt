@@ -86,14 +86,20 @@ class TopicListActivity : AppCompatActivity() {
                 if (response.isSuccessful && response.body() != null) {
                     val networkTopics = response.body()!!
                     
-                    // 转换为 Adapter 需要的格式
-                    val topics = networkTopics.map { netTopic ->
-                        Topic(
-                            id = netTopic.id?.toInt() ?: 0,
+                    // 转换为 Adapter 需要的格式，并从本地数据库获取实际回复数量
+                    val topics = mutableListOf<Topic>()
+                    for (netTopic in networkTopics) {
+                        val topicId = netTopic.id?.toInt() ?: 0
+                        // 从本地数据库查询实际的回复数量
+                        val actualReplyCount = withContext(Dispatchers.IO) {
+                            sportDatabase.forumReplyDao().getReplyCount(topicId)
+                        }
+                        topics.add(Topic(
+                            id = topicId,
                             title = netTopic.title,
                             authorName = netTopic.authorName ?: "匿名",
-                            replyCount = netTopic.replyCount ?: 0
-                        )
+                            replyCount = actualReplyCount  // 使用实际查询到的数量
+                        ))
                     }
                     
                     // 更新 RecyclerView
@@ -140,13 +146,18 @@ class TopicListActivity : AppCompatActivity() {
                     sportDatabase.forumTopicDao().getTopicsByCategory(categoryId)
                 }
                 
-                val topics = dbTopics.map { dbTopic ->
-                    Topic(
+                // 为每个主题实时查询回复数量
+                val topics = mutableListOf<Topic>()
+                for (dbTopic in dbTopics) {
+                    val actualReplyCount = withContext(Dispatchers.IO) {
+                        sportDatabase.forumReplyDao().getReplyCount(dbTopic.id)
+                    }
+                    topics.add(Topic(
                         id = dbTopic.id,
                         title = dbTopic.title,
                         authorName = dbTopic.userNickname,
-                        replyCount = dbTopic.replyCount
-                    )
+                        replyCount = actualReplyCount  // 使用实时查询到的数量
+                    ))
                 }
                 
                 binding.topicsRecyclerView.adapter = TopicAdapter(topics)
