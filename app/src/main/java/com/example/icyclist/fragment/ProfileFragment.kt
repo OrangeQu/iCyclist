@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
 import com.example.icyclist.EditProfileActivity
 import com.example.icyclist.LoginActivity
 import com.example.icyclist.R
@@ -104,14 +105,7 @@ class ProfileFragment : Fragment() {
                         )
                         
                         // 加载头像（如果有）
-                        profile.avatar?.let { avatarPath ->
-                            if (avatarPath.isNotEmpty()) {
-                                val file = File(avatarPath)
-                                if (file.exists()) {
-                                    imgAvatar?.setImageURI(Uri.fromFile(file))
-                                }
-                            }
-                        }
+                        loadAvatar(profile.avatar)
                         
                         return@launch
                     }
@@ -140,11 +134,44 @@ class ProfileFragment : Fragment() {
         tvUserName?.text = currentNickname ?: "骑行者"
         
         // 加载头像
-        if (!avatarPath.isNullOrEmpty()) {
+        loadAvatar(avatarPath)
+    }
+    
+    /**
+     * 加载头像（与EditProfileActivity保持一致）
+     */
+    private fun loadAvatar(avatarPath: String?) {
+        if (!avatarPath.isNullOrEmpty() && avatarPath.startsWith("/")) {
+            // 自定义头像路径
             val file = File(avatarPath)
             if (file.exists()) {
-                imgAvatar?.setImageURI(Uri.fromFile(file))
+                // 移除padding和背景
+                imgAvatar?.setPadding(0, 0, 0, 0)
+                imgAvatar?.background = null
+                
+                imgAvatar?.let { imageView ->
+                    Glide.with(this)
+                        .load(file)
+                        .centerCrop()
+                        .into(imageView)
+                }
+            } else {
+                // 文件不存在，显示默认头像
+                loadDefaultAvatar()
             }
+        } else {
+            // 默认头像（icon）
+            loadDefaultAvatar()
         }
+    }
+    
+    /**
+     * 加载默认头像
+     */
+    private fun loadDefaultAvatar() {
+        imgAvatar?.setImageResource(R.drawable.ic_twotone_person_24)
+        val paddingPx = (24 * resources.displayMetrics.density).toInt()
+        imgAvatar?.setPadding(paddingPx, paddingPx, paddingPx, paddingPx)
+        imgAvatar?.setBackgroundResource(R.drawable.avatar_background)
     }
 }
