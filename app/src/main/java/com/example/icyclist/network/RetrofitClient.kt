@@ -17,12 +17,6 @@ object RetrofitClient {
 
     /**
      * 服务器基础 URL
-     * 本地测试时使用：http://你的电脑IP:8080/
-     * 例如：http://192.168.1.100:8080/
-     * 
-     * ⚠️ 重要：请将此 IP 替换为你的电脑实际局域网 IP 地址
-     * Windows 查看 IP：打开 cmd，输入 ipconfig，查看 IPv4 地址
-     * macOS 查看 IP：系统偏好设置 -> 网络
      */
     private const val BASE_URL = "http://192.168.81.39:8080/"
 
@@ -69,13 +63,11 @@ object RetrofitClient {
             .build()
     }
 
-    /**
-     * Retrofit 实例
-     */
+
     private var retrofit: Retrofit? = null
 
     /**
-     * 初始化 Retrofit（需要 Context 用于认证拦截器）
+     * 初始化 Retrofit
      */
     private fun getRetrofit(context: Context): Retrofit {
         if (retrofit == null) {
@@ -90,14 +82,13 @@ object RetrofitClient {
 
     /**
      * 获取 ApiService 实例
-     * @param context 上下文，用于获取认证信息
      */
     fun getApiService(context: Context): ApiService {
         return getRetrofit(context).create(ApiService::class.java)
     }
 
     /**
-     * 更新基础 URL（如果需要动态切换服务器）
+     * 更新基础 URL
      */
     fun updateBaseUrl(newBaseUrl: String, context: Context) {
         retrofit = Retrofit.Builder()
