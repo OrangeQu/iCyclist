@@ -116,7 +116,7 @@
             
     </application>
 
-    <!-- 地图SDK（包含其搜索功能）需要的基础权限 -->
+    <!-- 地图SDK需要的基础权限 -->
     
     <!--允许程序打开网络套接字-->
     <uses-permission android:name="android.permission.INTERNET"
