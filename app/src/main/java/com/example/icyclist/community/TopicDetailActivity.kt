@@ -60,8 +60,6 @@ class TopicDetailActivity : AppCompatActivity() {
     
     private fun setupReplyButton() {
         // 检查布局中是否有回复输入框和按钮
-        // 如果没有，可以在点击时显示一个对话框
-        // 这里先用一个简单的Toast提示，后续可以优化为对话框
         binding.root.findViewById<View?>(com.example.icyclist.R.id.btn_send_reply)?.setOnClickListener {
             sendReply()
         }
@@ -197,7 +195,6 @@ class TopicDetailActivity : AppCompatActivity() {
     
     /**
      * 发送回复
-     * 由于布局可能没有输入框，这里使用AlertDialog
      */
     private fun sendReply() {
         val input = android.widget.EditText(this)
