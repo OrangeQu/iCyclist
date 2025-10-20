@@ -18,10 +18,4 @@ interface CommunityPostDao {
     @Delete
     suspend fun deletePost(post: CommunityPostEntity)
 
-    // 如果未来需要，可以添加根据ID查询、删除等方法
-    // @Query("SELECT * FROM community_posts WHERE id = :postId")
-    // suspend fun getPostById(postId: Int): CommunityPostEntity?
-    //
-    // @Query("DELETE FROM community_posts WHERE id = :postId")
-    // suspend fun deletePostById(postId: Int)
 }
