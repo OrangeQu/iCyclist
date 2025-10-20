@@ -182,7 +182,7 @@ class EditProfileActivity : AppCompatActivity() {
             try {
                 val userId = UserManager.getUserId(this@EditProfileActivity)
                 if (userId != null && userId > 0) {
-                    // 1. 提交到服务器
+                    // 提交到服务器
                     val apiService = RetrofitClient.getApiService(this@EditProfileActivity)
                     val profileRequest = ProfileRequest(
                         nickname = nickname,
