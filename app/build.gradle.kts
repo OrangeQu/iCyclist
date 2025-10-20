@@ -7,7 +7,7 @@ plugins {
     id("kotlin-kapt")
 }
 
-// 🔐 从本地配置文件读取 API 密钥 (不会提交到 Git)
+// 从本地配置文件读取 API 密钥
 val apiKeysPropertiesFile = rootProject.file("apikeys.properties")
 val apiKeysProperties = Properties()
 if (apiKeysPropertiesFile.exists()) {
@@ -26,7 +26,7 @@ android {
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
-        // ✅ 从配置文件读取 API 密钥 (如果文件不存在则使用空字符串)
+        // 从配置文件读取 API 密钥 
         manifestPlaceholders["AMAP_API_KEY"] = apiKeysProperties.getProperty("AMAP_API_KEY", "")
     }
 
@@ -117,7 +117,7 @@ task("printSHA1") {
     }
 }
 
-// ✅ dependencies 代码块必须独立放置，与 android { } 块同级
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -125,7 +125,7 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
-    // ✅ 高德地图 SDK 线上依赖（推荐方式）
+    // 高德地图 SDK 线上依赖
 //    implementation("com.amap.api:services-core:3.1.0")
     implementation("com.amap.api:3dmap:latest.integration")
 //    implementation("com.amap.api:location:latest.integration")
