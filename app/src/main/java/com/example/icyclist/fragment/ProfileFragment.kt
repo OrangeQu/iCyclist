@@ -110,7 +110,7 @@ class ProfileFragment : Fragment() {
                             profile.nickname
                         )
                         
-                        // 加载头像（如果有）
+                        // 加载头像
                         loadAvatar(profile.avatar)
                         
                         return@launch
@@ -129,7 +129,7 @@ class ProfileFragment : Fragment() {
     }
     
     /**
-     * 从本地缓存加载用户数据（后备方案）
+     * 从本地缓存加载用户数据
      */
     private fun loadFromLocalCache() {
         val currentEmail = UserManager.getCurrentUserEmail(requireContext())
