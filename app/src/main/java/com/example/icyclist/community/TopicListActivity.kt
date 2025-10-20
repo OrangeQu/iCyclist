@@ -137,7 +137,7 @@ class TopicListActivity : AppCompatActivity() {
     }
     
     /**
-     * 从本地缓存加载（作为后备方案）
+     * 从本地缓存加载
      */
     private fun loadFromLocalCache(categoryId: Int) {
         lifecycleScope.launch {
