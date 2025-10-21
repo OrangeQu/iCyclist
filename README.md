@@ -133,15 +133,6 @@ private const val BASE_URL = "http://your-server-ip:8080/"
 2. 连接Android设备或启动模拟器
 3. 点击运行按钮
 
-## 📱 应用截图
-
-<details>
-<summary>点击查看截图</summary>
-
-<!-- 在这里添加应用截图 -->
-
-</details>
-
 ## 🔌 API接口
 
 ### 用户认证
